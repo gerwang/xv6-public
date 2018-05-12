@@ -89,3 +89,12 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// Halt (shutdown) the system by sending a special signal to QEMU.
+// Based on: https://github.com/noah-mcaulay/XV6-Operating-System/blob/master/sysproc.c
+int
+sys_shutdown(void)
+{
+  outw(0x604, 0x0 | 0x2000);
+  return 0;
+}

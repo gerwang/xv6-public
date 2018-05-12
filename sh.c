@@ -3,6 +3,10 @@
 #include "types.h"
 #include "user.h"
 #include "fcntl.h"
+#include "history.h"
+#include "console.h"
+#include "stat.h"
+#include "fs.h"
 
 // Parsed command representation
 #define EXEC  1
@@ -48,6 +52,14 @@ struct backcmd {
   int type;
   struct cmd *cmd;
 };
+
+struct history hs;
+
+void initHistory(struct history* hs);
+void addHistory(struct history* hs,char* cmd);
+void getHistory(struct history* hs);
+void setHistory(char* cmd);
+
 
 int fork1(void);  // Fork but panics on failure.
 void panic(char*);
@@ -130,14 +142,72 @@ runcmd(struct cmd *cmd)
   exit();
 }
 
+void
+renewline(char* buf, int nbuf)
+{
+  int j;
+  for(j = 0; buf[j]; j++){
+    clearc();
+  }
+  for(j = 0; buf[j]; j++){
+    insertc(buf[j]);
+  }
+  memset(buf, 0, nbuf);
+}
+
 int
 getcmd(char *buf, int nbuf)
 {
+  int i, j;
   printf(2, "$ ");
   memset(buf, 0, nbuf);
-  gets(buf, nbuf);
+  char c;
+  for(i=0; i+1 < nbuf; ){ 
+    c = getc();
+   
+    if(c+256 == 0xE2){//key_up
+      clearc(); // 去掉上键
+      if (hs.length != H_NUMBER && hs.curcmd == 0){ 
+        renewline(buf, nbuf);
+        i = 0;
+        continue;
+      }      
+      if (hs.curcmd == (hs.lastcmd + 1) % H_NUMBER){
+        renewline(buf, nbuf);
+        i = 0;
+        continue;
+      }
+      for(j = 0; buf[j]; j++){
+        clearc();
+      } 
+      hs.curcmd = (hs.curcmd + H_NUMBER - 1) % H_NUMBER;
+      for(j = 0; hs.record[hs.curcmd][j]; j++ )
+        insertc(hs.record[hs.curcmd][j]);
+      i = 0;
+      strcpy(buf, hs.record[hs.curcmd]);
+      continue;
+    }
+    if (c+256 == 0xE3){//key_down
+      clearc();
+      if (hs.curcmd != hs.lastcmd){
+        hs.curcmd = (hs.curcmd + 1) % H_NUMBER;
+      }
+      for(j = 0; buf[j]; j++){
+        clearc();
+      }
+      for(j = 0; hs.record[hs.curcmd][j]; j++ )
+        insertc(hs.record[hs.curcmd][j]);
+      i = 0;
+      strcpy(buf, hs.record[hs.curcmd]);
+      continue;
+    }
+    if(c == '\n' || c == '\r')
+      break;
+    buf[i++] = c;
+  }
+  buf[i] = '\0';
   if(buf[0] == 0) // EOF
-    return -1;
+    return 0;
   return 0;
 }
 
@@ -146,6 +216,8 @@ main(void)
 {
   static char buf[100];
   int fd;
+  initHistory(&hs);
+  getHistory(&hs);
 
   // Ensure that three file descriptors are open.
   while((fd = open("console", O_RDWR)) >= 0){
@@ -157,9 +229,16 @@ main(void)
 
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){
+    if (buf[0] == '!' && buf[1] == '!')
+    {
+      strcpy(buf, hs.record[(hs.lastcmd - 1) % H_NUMBER]);
+    } else {
+      addHistory(&hs, buf);
+      setHistory(buf);
+    }
     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
       // Chdir must be called by the parent, not the child.
-      buf[strlen(buf)-1] = 0;  // chop \n
+      buf[strlen(buf)] = 0;  // chop \n
       if(chdir(buf+3) < 0)
         printf(2, "cannot cd %s\n", buf+3);
       continue;
@@ -490,4 +569,59 @@ nulterminate(struct cmd *cmd)
     break;
   }
   return cmd;
+}
+
+void initHistory(struct history* hs){
+  hs->length = 1;
+  hs->curcmd = 0;
+  hs->lastcmd = 0;
+}
+
+void addHistory(struct history* hs, char* cmd){
+  if (cmd[0] == '\n')
+    return;
+  int l = strlen(cmd);
+  int last = hs->lastcmd;
+  strcpy(hs->record[last], cmd);
+  if (hs->record[last][l - 1] == '\n')
+    hs->record[last][l - 1] = '\0';
+  last = (last + 1) % H_NUMBER;
+  hs->record[last][0] = '\0';
+  hs->lastcmd = last;
+  hs->curcmd = last;
+  if (hs->length < H_NUMBER)
+    hs->length++;
+}
+
+void getHistory(struct history* hs){ 
+  const int bufSize = 128;
+  int fp = open("/.history", O_RDONLY | O_CREATE);
+  int i, length, pos;
+
+  char buf[bufSize];
+  char tmp[bufSize];
+
+  pos = 0;
+  initHistory(hs);
+  while ((length = read(fp, buf, bufSize)) > 0){
+    for (i = 0; i < length; ++i){
+      if (buf[i] == '\n'){
+        tmp[pos] = '\0';
+        addHistory(hs, tmp);
+        pos = 0;
+      }
+      else{
+        tmp[pos++] = buf[i];
+      }
+    }
+  }
+
+  close(fp);
+}
+
+void setHistory(char* cmd){
+    int fp = open("/.history", O_WRONLY | O_CREATE | O_ADD);
+    write(fp, cmd, strlen(cmd));
+    write(fp, "\n", 1);
+    close(fp);
 }

@@ -9,6 +9,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct rtcdate;//实时时间结构体
 
 // bio.c
 void            binit(void);
@@ -21,6 +22,11 @@ void            consoleinit(void);
 void            cprintf(char*, ...);
 void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
+void            clearc(void);
+void            insertc(int);
+
+// datetime.c
+void			datetime(void*);//时间函数
 
 // exec.c
 int             exec(char*, char**);

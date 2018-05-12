@@ -19,6 +19,7 @@ cat(int fd)
     printf(1, "cat: read error\n");
     exit();
   }
+  printf(1, "\n");
 }
 
 int
