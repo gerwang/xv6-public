@@ -1,5 +1,5 @@
 // Shell.
-
+//sh.c文件的修改者：毛誉陶,江俊广
 #include "types.h"
 #include "user.h"
 #include "fcntl.h"
@@ -21,34 +21,35 @@ struct cmd {
   int type;
 };
 
-struct execcmd {
+struct execcmd {//执行程序命令
   int type;
-  char *argv[MAXARGS];
-  char *eargv[MAXARGS];
+  char *argv[MAXARGS];//程序参数的开头 的数组
+  char *eargv[MAXARGS];//程序参数的末尾 的数组
+  //[ argv[0], eargv[0] ) 构成了程序的第一个参数
 };
 
-struct redircmd {
+struct redircmd {//重定向命令
   int type;
   struct cmd *cmd;
-  char *file;
-  char *efile;
-  int mode;
-  int fd;
+  char *file;//文件名字符串的开头
+  char *efile;//文件名字符串的结尾
+  int mode;//打开文件的模式
+  int fd;//文件描述符
 };
 
-struct pipecmd {
+struct pipecmd {//管道命令
+  int type;
+  struct cmd *left;//管道输入命令
+  struct cmd *right;//管道的删除命令
+};
+
+struct listcmd {//多个进程（前面命令执行成功与否都去执行后面的指令）
   int type;
   struct cmd *left;
   struct cmd *right;
 };
 
-struct listcmd {
-  int type;
-  struct cmd *left;
-  struct cmd *right;
-};
-
-struct backcmd {
+struct backcmd {//后台进程（无用户交互）
   int type;
   struct cmd *cmd;
 };
@@ -83,7 +84,7 @@ runcmd(struct cmd *cmd)
   default:
     panic("runcmd");
 
-  case EXEC:
+  case EXEC://执行某个程序
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       exit();
@@ -91,46 +92,45 @@ runcmd(struct cmd *cmd)
     printf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
 
-  case REDIR:
+  case REDIR://重定向
     rcmd = (struct redircmd*)cmd;
     close(rcmd->fd);
     if(open(rcmd->file, rcmd->mode) < 0){
       printf(2, "open %s failed\n", rcmd->file);
       exit();
-    }
+    }//保证cmd运行前，需要的文件rcmd->file已经被打开
     runcmd(rcmd->cmd);
     break;
 
-  case LIST:
+  case LIST: 
     lcmd = (struct listcmd*)cmd;
-    if(fork1() == 0)
+    if(fork1() == 0)//子进程执行left命令
       runcmd(lcmd->left);
-    wait();
-    runcmd(lcmd->right);
+    wait();//父进程等待子进程结束后
+    runcmd(lcmd->right);//执行right命令
     break;
 
-  case PIPE:
+  case PIPE://管道命令
     pcmd = (struct pipecmd*)cmd;
-    if(pipe(p) < 0)
+    if(pipe(p) < 0)//pipe返回一个管道的输入和输出描述符p[0],p[1]
       panic("pipe");
-    if(fork1() == 0){
-      close(1);
-      dup(p[1]);
+    if(fork1() == 0){//创建一个子进程
+      close(1);//关闭原先的标准输出
+      dup(p[1]);//将p[1]绑定到标准输出
       close(p[0]);
       close(p[1]);
-      runcmd(pcmd->left);
+      runcmd(pcmd->left);//pcmd->left的输出流向了p[1]      
     }
-    if(fork1() == 0){
-      close(0);
-      dup(p[0]);
+    if(fork1() == 0){//再创建一个子进程
+      close(0);//关闭原先的标准输入
+      dup(p[0]);//将p[0]绑定到标准输入
       close(p[0]);
       close(p[1]);
-      runcmd(pcmd->right);
+      runcmd(pcmd->right);//pcmd->right输入来自p[0]
     }
     close(p[0]);
-    close(p[1]);
-    wait();
-    wait();
+    close(p[1]);//在父进程中也需要关闭对管道的读写控制
+    wait();//等待子进程返回
     break;
 
   case BACK:
@@ -149,14 +149,14 @@ renewline(char* buf, int nbuf)
   for(j = 0; buf[j]; j++){
     clearc();
   }
-  for(j = 0; buf[j]; j++){
+  for(j = 0; buf[j]; j++){//将缓冲区buf中的内容输出到显示区
     insertc(buf[j]);
   }
-  memset(buf, 0, nbuf);
+  memset(buf, 0, nbuf);//然后清空缓冲区
 }
 
 int
-getcmd(char *buf, int nbuf)
+getcmd(char *buf, int nbuf)//从键盘读入命令到buf中，最长不能超过nbuf-1
 {
   int i, j;
   printf(2, "$ ");
@@ -211,44 +211,94 @@ getcmd(char *buf, int nbuf)
   return 0;
 }
 
-int
-main(void)
+int 
+processCmdLine(char* line)//处理一行shell命令
 {
-  static char buf[100];
-  int fd;
-  initHistory(&hs);
-  getHistory(&hs);
-
-  // Ensure that three file descriptors are open.
-  while((fd = open("console", O_RDWR)) >= 0){
-    if(fd >= 3){
-      close(fd);
-      break;
+  if(strlen(line) <= 1) return -1;
+  printf(2, line); printf(2,"\n");
+  if(line[0] == 'c' && line[1] == 'd' && line[2] == ' '){//如果line中命令是cd
+    // Chdir must be called by the parent, not the child.
+    line[strlen(line)] = 0;  // chop \n
+    if(chdir(line+3) < 0)
+      printf(2, "cannot cd %s\n", line+3);
+  }else{//line中命令不是cd，
+    if(fork1() == 0){//创建子进程
+      runcmd(parsecmd(line));//执行line中的命令，执行完后会自动销毁子进程
+    }else{
+      wait();//父进程等待子进程返回后需要继续运行
     }
   }
-
-  // Read and run input commands.
-  while(getcmd(buf, sizeof(buf)) >= 0){
-    if (buf[0] == '!' && buf[1] == '!')
-    {
-      strcpy(buf, hs.record[(hs.lastcmd - 1) % H_NUMBER]);
-    } else {
-      addHistory(&hs, buf);
-      setHistory(buf);
-    }
-    if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
-      // Chdir must be called by the parent, not the child.
-      buf[strlen(buf)] = 0;  // chop \n
-      if(chdir(buf+3) < 0)
-        printf(2, "cannot cd %s\n", buf+3);
-      continue;
-    }
-    if(fork1() == 0)
-      runcmd(parsecmd(buf));
-    wait();
-  }
-  exit();
+  return 0;
 }
+
+int 
+executeShellFile(char* filename){
+//从filename中读入shell命令，并执行
+  int fd = open(filename, O_RDONLY);
+  if(fd < 0)
+    return fd;
+  char buf[128];//读入字符缓冲区
+  int n, i, p = 0;
+  const int MAX_LINE_LENGTH = 128;
+  char line[MAX_LINE_LENGTH];//一行命令，设置最长为128个字符
+  while((n = read(fd, buf, 128)) > 0){//从文件中不断读入字符到缓存区
+    for(i = 0; i < n; i++){
+      if(buf[i] == '\n'){//如果读入了换行符
+        line[p] = '\0';//则可以执行该行命令了
+        p = 0;
+        processCmdLine(line);
+        memset(line, 0, sizeof(line));
+      }else{//如果还没有读入换行符
+        if(p < MAX_LINE_LENGTH){
+          line[p++] = buf[i];//从缓冲区中读取到line中
+        }else{
+          printf(2,"error:单行命令长度不能超过128\n");
+        }
+      }
+    }
+  }
+  close(fd);
+  return 0;
+}
+
+int
+main(int argc, char *argv[])
+{
+  if(argc <= 1){//如果没有参数，说明是创建一个shell终端
+    static char buf[100];
+    int fd;
+    initHistory(&hs);
+    getHistory(&hs);
+
+    // Ensure that three file descriptors are open.
+    while((fd = open("console", O_RDWR)) >= 0){
+      if(fd >= 3){
+        close(fd);
+        break;
+      }
+    }
+
+    // Read and run input commands.
+    while(getcmd(buf, sizeof(buf)) >= 0){
+      if (buf[0] == '!' && buf[1] == '!')
+      {
+        strcpy(buf, hs.record[(hs.lastcmd - 1) % H_NUMBER]);
+      } else {
+        addHistory(&hs, buf);
+        setHistory(buf);
+      }
+      processCmdLine(buf);//处理buf中存储的命令
+    }
+    exit();
+  }else{//如果有参数，目前只接受以文件名作为参数
+    int i;
+    for(i=1; i<argc; i++){
+      executeShellFile(argv[i]);//用shell执行参数对应的文件
+    }
+  }
+  return 0;
+}
+
 
 void
 panic(char *s)
@@ -306,8 +356,8 @@ pipecmd(struct cmd *left, struct cmd *right)
   cmd = malloc(sizeof(*cmd));
   memset(cmd, 0, sizeof(*cmd));
   cmd->type = PIPE;
-  cmd->left = left;
-  cmd->right = right;
+  cmd->left = left;//left指向自己所要执行的命令
+  cmd->right = right;//right指向下一个要指向的命令
   return (struct cmd*)cmd;
 }
 
@@ -347,16 +397,16 @@ gettoken(char **ps, char *es, char **q, char **eq)
   char *s;
   int ret;
 
-  s = *ps;
-  while(s < es && strchr(whitespace, *s))
+  s = *ps;//从*ps字符串的开头开始寻找
+  while(s < es && strchr(whitespace, *s))//忽略多余的空格
     s++;
   if(q)
-    *q = s;
+    *q = s;//q记录有意义字符串的开头位置
   ret = *s;
   switch(*s){
   case 0:
     break;
-  case '|':
+  case '|'://一个字符长度的符号
   case '(':
   case ')':
   case ';':
@@ -366,36 +416,36 @@ gettoken(char **ps, char *es, char **q, char **eq)
     break;
   case '>':
     s++;
-    if(*s == '>'){
-      ret = '+';
+    if(*s == '>'){//两个字符长度的符号
+      ret = '+';//返回'+'表示读入的是">>"
       s++;
     }
     break;
-  default:
-    ret = 'a';
-    while(s < es && !strchr(whitespace, *s) && !strchr(symbols, *s))
-      s++;
+  default://如果读入的是一个普通字符，则
+    ret = 'a';//返回'a'
+    while(s < es && !strchr(whitespace, *s) && !strchr(symbols, *s))//则以空格或者符号作为分隔，
+      s++;//读入整个普通字符串
     break;
   }
   if(eq)
-    *eq = s;
+    *eq = s;//*eq记录读入的有意义字符串结尾的位置
 
-  while(s < es && strchr(whitespace, *s))
+  while(s < es && strchr(whitespace, *s))//忽略到s后多余的空格
     s++;
-  *ps = s;
-  return ret;
+  *ps = s;//*ps记录下一次开始搜索的位置
+  return ret;//返回读入的字符串类型
 }
 
 int
-peek(char **ps, char *es, char *toks)
+peek(char **ps, char *es, char *toks)//忽略字符次*ps中的空格，返回其中首个字符是否属于toks
 {
   char *s;
 
   s = *ps;
-  while(s < es && strchr(whitespace, *s))
+  while(s < es && strchr(whitespace, *s))//首先忽略掉所有的空格
     s++;
-  *ps = s;
-  return *s && strchr(toks, *s);
+  *ps = s;//*ps指向首个非空字符
+  return *s && strchr(toks, *s);//判断*s是否属于toks
 }
 
 struct cmd *parseline(char**, char*);
@@ -404,70 +454,71 @@ struct cmd *parseexec(char**, char*);
 struct cmd *nulterminate(struct cmd*);
 
 struct cmd*
-parsecmd(char *s)
+parsecmd(char *s)//将命令字符串转化为命令结构体
 {
   char *es;
   struct cmd *cmd;
 
-  es = s + strlen(s);
-  cmd = parseline(&s, es);
-  peek(&s, es, "");
-  if(s != es){
+  es = s + strlen(s);//es指向字符串s的尾部
+  cmd = parseline(&s, es);//从字符次*s得到命令结构体
+  peek(&s, es, "");//忽略s后所有的空格
+  if(s != es){//如果没有处理完s中的所有内容
     printf(2, "leftovers: %s\n", s);
-    panic("syntax");
+    panic("syntax");//说明有语法错误
   }
-  nulterminate(cmd);
+  nulterminate(cmd);///将cmd中所有字符串的结尾设置为0,以便后续程序正确的处理
   return cmd;
 }
 
 struct cmd*
-parseline(char **ps, char *es)
+parseline(char **ps, char *es)//读取一行字符串*ps
 {
   struct cmd *cmd;
 
-  cmd = parsepipe(ps, es);
-  while(peek(ps, es, "&")){
-    gettoken(ps, es, 0, 0);
-    cmd = backcmd(cmd);
+  cmd = parsepipe(ps, es);//从*ps开头读取一组按照管道连接的命令
+  while(peek(ps, es, "&")){//若*ps中首个非空字符为&
+    gettoken(ps, es, 0, 0);//则读入这个&字符
+    cmd = backcmd(cmd);//命令在后台运行
   }
-  if(peek(ps, es, ";")){
-    gettoken(ps, es, 0, 0);
-    cmd = listcmd(cmd, parseline(ps, es));
+  if(peek(ps, es, ";")){//若*ps中首个非空字符为;
+    gettoken(ps, es, 0, 0);//则读入这个;字符
+    cmd = listcmd(cmd, parseline(ps, es));//递归构造命令列表
   }
   return cmd;
 }
 
 struct cmd*
-parsepipe(char **ps, char *es)
+parsepipe(char **ps, char *es)//从*ps开头读取一组按照管道连接的命令
 {
   struct cmd *cmd;
 
   cmd = parseexec(ps, es);
-  if(peek(ps, es, "|")){
-    gettoken(ps, es, 0, 0);
-    cmd = pipecmd(cmd, parsepipe(ps, es));
+  if(peek(ps, es, "|")){//若ps中首个非空字符为|
+    gettoken(ps, es, 0, 0);//则读入这个|字符
+    cmd = pipecmd(cmd, parsepipe(ps, es));//构造以管道连接的一组命令
   }
   return cmd;
 }
 
 struct cmd*
 parseredirs(struct cmd *cmd, char **ps, char *es)
+//从*ps开头读取一个重定向命令，将cmd重定向后返回
 {
   int tok;
   char *q, *eq;
 
-  while(peek(ps, es, "<>")){
-    tok = gettoken(ps, es, 0, 0);
-    if(gettoken(ps, es, &q, &eq) != 'a')
+  while(peek(ps, es, "<>")){//如果*ps开头是字符<,>
+    tok = gettoken(ps, es, 0, 0);//读入该字符('<','>',">>")
+    if(gettoken(ps, es, &q, &eq) != 'a')//然后读入其后的文件名，[q,eq)为文件名字符串
       panic("missing file for redirection");
     switch(tok){
-    case '<':
+    case '<'://重定向标准输入
       cmd = redircmd(cmd, q, eq, O_RDONLY, 0);
       break;
-    case '>':
+    case '>'://重定向标准输出，覆盖原文件
       cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE, 1);
       break;
-    case '+':  // >>
+    case '+':  // >> 重定向标准输出，追加到原文件
       cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE, 1);
       break;
     }
@@ -476,57 +527,58 @@ parseredirs(struct cmd *cmd, char **ps, char *es)
 }
 
 struct cmd*
-parseblock(char **ps, char *es)
+parseblock(char **ps, char *es)//从*ps开头读取以'('')'包围的命令
 {
   struct cmd *cmd;
 
   if(!peek(ps, es, "("))
     panic("parseblock");
   gettoken(ps, es, 0, 0);
-  cmd = parseline(ps, es);
+  cmd = parseline(ps, es);//括号中的命令将会新开一个子shell顺序执行
   if(!peek(ps, es, ")"))
     panic("syntax - missing )");
   gettoken(ps, es, 0, 0);
-  cmd = parseredirs(cmd, ps, es);
+  cmd = parseredirs(cmd, ps, es);//子shell的输入和输出有可能重定向到父shell
   return cmd;
 }
 
+
 struct cmd*
-parseexec(char **ps, char *es)
+parseexec(char **ps, char *es)//读取一个可执行命令
 {
   char *q, *eq;
   int tok, argc;
   struct execcmd *cmd;
   struct cmd *ret;
 
-  if(peek(ps, es, "("))
-    return parseblock(ps, es);
+  if(peek(ps, es, "("))//如果*ps开头有由括号构成的block
+    return parseblock(ps, es);//则返回由该block构成的命令
 
   ret = execcmd();
   cmd = (struct execcmd*)ret;
 
   argc = 0;
-  ret = parseredirs(ret, ps, es);
-  while(!peek(ps, es, "|)&;")){
-    if((tok=gettoken(ps, es, &q, &eq)) == 0)
-      break;
-    if(tok != 'a')
-      panic("syntax");
-    cmd->argv[argc] = q;
+  ret = parseredirs(ret, ps, es);//即使是*ps的开头也可能出现重定向命令
+  while(!peek(ps, es, "|)&;")){//如果*ps的开头不是|)&;
+    if((tok=gettoken(ps, es, &q, &eq)) == 0)//如果已经到达了*ps的尾部
+      break;//则退出循环
+    if(tok != 'a')//如果读入的不是一个普通字符串
+      panic("syntax");//则为语法错误
+    cmd->argv[argc] = q;//不断读入程序的参数
     cmd->eargv[argc] = eq;
     argc++;
-    if(argc >= MAXARGS)
-      panic("too many args");
-    ret = parseredirs(ret, ps, es);
+    if(argc >= MAXARGS)//如果超过程序参数的上限
+      panic("too many args");//则报错
+    ret = parseredirs(ret, ps, es);//任意参数之间都可以有重定向命令
   }
-  cmd->argv[argc] = 0;
+  cmd->argv[argc] = 0;//通过判断argv[]中第几个字符为空，可以得到程序参数的个数
   cmd->eargv[argc] = 0;
   return ret;
 }
 
 // NUL-terminate all the counted strings.
 struct cmd*
-nulterminate(struct cmd *cmd)
+nulterminate(struct cmd *cmd)//将cmd中所有字符串的结尾设置为0,以便后续程序正确的处理
 {
   int i;
   struct backcmd *bcmd;

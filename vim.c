@@ -11,7 +11,7 @@
 void 
 initColorConfiguration()//初始化颜色配置
 {
-    //首先尝试从配置文件中读入颜色设置
+    //首先尝试从配置文件中读入颜色设置(该功能尚未实现)
     BACKGROUND_COLOR = BLACK;//背景色
     RESERVERED_WORD_COLOR = BLUE;//保留字的颜色
     //PARAMETER_COLOR = DARKGREEN;//常量的颜色
