@@ -49,18 +49,13 @@ coor(int x, int y)//将二维坐标转换为一维的编号
     return x * CONSOLE_WIDTH + y;
 }
 
-void updateTextView(int i)//更新视图的第i行
-{
-
-}
-
 void
 init()//将显示区刷新为空白内容
 {
     int i, j;
     for (i = 0; i < CONSOLE_HEIGHT; ++i)
         for (j = 0; j < CONSOLE_WIDTH; ++j)
-            setconsole(coor(i, j), 0, WHITE_ON_BLACK, -1, 2);//setconsole整个函数的实现在哪里？？？
+            setconsole(coor(i, j), 0, WHITE_ON_BLACK, -1, 2);
     setconsole(-1, 0, 0, coor(cursorX, cursorY), 2);
 }
 

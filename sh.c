@@ -214,9 +214,8 @@ getcmd(char *buf, int nbuf)//从键盘读入命令到buf中，最长不能超过
 int 
 processCmdLine(char* line)//处理一行shell命令
 {
-  if(strlen(line) <= 1) return -1;
-  printf(2, line); printf(2,"\n");
-  if(line[0] == 'c' && line[1] == 'd' && line[2] == ' '){//如果line中命令是cd
+  if(strlen(line) <= 0) return -1;
+  if(strlen(line) >= 3 && line[0] == 'c' && line[1] == 'd' && line[2] == ' '){//如果line中命令是cd
     // Chdir must be called by the parent, not the child.
     line[strlen(line)] = 0;  // chop \n
     if(chdir(line+3) < 0)
@@ -294,6 +293,7 @@ main(int argc, char *argv[])
     for(i=1; i<argc; i++){
       executeShellFile(argv[i]);//用shell执行参数对应的文件
     }
+    exit();
   }
   return 0;
 }
