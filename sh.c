@@ -247,7 +247,6 @@ executeShellFile(char* filename){
         line[p] = '\0';//则可以执行该行命令了
         p = 0;
         processCmdLine(line);
-        memset(line, 0, sizeof(line));
       }else{//如果还没有读入换行符
         if(p < MAX_LINE_LENGTH){
           line[p++] = buf[i];//从缓冲区中读取到line中

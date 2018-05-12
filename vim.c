@@ -360,7 +360,7 @@ delete()//删除1个字符
         for (i = 0, j = l1; i < l2 && j < MAX_LENGTH; ++i, ++j)//将下一行的内容复制到上一行
             textbuf[textX - 1][j] = textbuf[textX][i];//Note:此处的复制策略比较简单粗暴，存在着一个潜在的bug，当下一行较长时，可能会丢失后半段的字符
         textbuf[textX - 1][j] = 0;
-        deleteline(1);//然后删除下一行，
+        deleteline(0);//然后删除下一行，
         moveCursor(-1, l1+1);//将光标移动到上一行的末尾
         showTextRange(cursorX, bottom);//下一行以下全部刷新
         return;
