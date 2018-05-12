@@ -164,7 +164,8 @@ getcmd(char *buf, int nbuf)//从键盘读入命令到buf中，最长不能超过
   char c;
   for(i=0; i+1 < nbuf; ){ 
     c = getc();
-   
+    if( ( i==0 || buf[i-1] == 0 ) && c == 0 )//若输入的为首字符或者此前已经输入了空格
+      continue;//则可以忽略多余的空格（适用性最好的实现方式应该时对输入的buf进行分词，此处简化处理，只过滤多余的空格）
     if(c+256 == 0xE2){//key_up
       clearc(); // 去掉上键
       if (hs.length != H_NUMBER && hs.curcmd == 0){ 
@@ -205,6 +206,9 @@ getcmd(char *buf, int nbuf)//从键盘读入命令到buf中，最长不能超过
       break;
     buf[i++] = c;
   }
+  // char s[5]; s[0] = '0'+i;s[2]='\n';s[3]=0; s[1] = buf[0]+'0'; 
+  // printf(2, s);
+  
   buf[i] = '\0';
   if(buf[0] == 0) // EOF
     return 0;

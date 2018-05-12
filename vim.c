@@ -59,11 +59,6 @@ init()//将显示区刷新为空白内容
     setconsole(-1, 0, 0, coor(cursorX, cursorY), 2);
 }
 
-void //在屏幕坐标（i，j）的位置放一个字符c，字体颜色为fontColor,背景颜色为backgroundColor
-printChar(int i, int j, char c, int fontColor, int backgroundColor){
-    setconsole(coor(i, j), c, combineColor(fontColor, backgroundColor), -1, 2);
-}
-
 void
 quit()
 {
