@@ -81,7 +81,20 @@ static char operatorOrDelimiter[36][10] = {
     "}", "\\", ".", "\?", ":", "!"
 };
 
-static  char IDentifierTbl[1000][50] = { "" };//标识符表
+// static  char IDentifierTbl[1000][50] = { "" };//标识符表
 /****************************************************************************************/
 
 
+//分词函数对外提供的接口
+
+//词法分析子程序
+//*synptr：返回词语的类型
+//s: 输入的字符串
+//token: 返回的词语
+//*pptr: 当前词法分析子程序在s中扫描到的位置
+void Scanner(int* synptr, char s[], char token[], int*pptr);
+
+#define isReserveWord(syn) (syn >= 1 && syn <= 32) //判断是否为保留字
+#define isIDentifier(syn) (syn == 100) //判断是否为标识符
+#define isParameter(syn) (syn == 99) //判断是否为常数
+#define isOperatorOrDelimiter(syn) (syn>=33 && syn<=68)//判断是否为运算符或者定界符

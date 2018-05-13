@@ -32,12 +32,13 @@ bool isDigit(char digit){
 }
 
 //编译预处理，取出无用的字符和注释
-//r[0...size]为待处理字符
-//处理后的字符也放在r[0...]中
-void filterResource(char r[], int size){
-    char tempString[10000];
+//r为待处理字符,必须以'\0'结尾
+//处理后的字符也放在r中
+void filterResource(char r[]){
+    int size = strlen(r);//输入串的长度
+    char tempString[size+1];
     int count = 0;
-    for(int i = 0; i <= size; i++){
+    for(int i = 0; i < size; i++){
         if(r[i] == '/' && r[i+1] == '/'){//若为单行注释"//",则去除注释后面的东西，直至遇到回车换行
             while(r[i] != '\n') i++;//向后扫描
         }
@@ -62,7 +63,7 @@ void filterResource(char r[], int size){
 
 //词法分析子程序
 //*synptr：返回词语的类型
-//s: 输入的字符串
+//s: 输入的字符串,必须以'\0'结尾
 //token: 返回的词语
 //*pptr: 当前词法分析子程序在s中扫描到的位置
 void Scanner(int* synptr, char s[], char token[], int*pptr){
@@ -155,36 +156,37 @@ void Scanner(int* synptr, char s[], char token[], int*pptr){
     *synptr = syn; *pptr = p;//修改传进来的参数值
 }
 
-int main(){
-    char s[100]="int main(int i){\n\ti = 0;\n char* s = 'this is fine'; \n};\n";
-    char token[20] = {0};
-    int syn = -1, p = 0;
-    printf(2,"源程序为%s\n",s);
-    filterResource(s, strlen(s));
-    printf(2,"过滤后的程序为%s\n",s);
-    int i;
-    while(syn != 0){
-        Scanner(&syn, s, token, &p);
-        if(syn == 100){//标识符
-            for(i=0; i<1000; i++){
-                if(strcmp(IDentifierTbl[i], token) == 0) break;//如果已经在表中，则不作处理
-                if(strcmp(IDentifierTbl[i], "") == 0){//如果出现了标识符表中未曾出现的元素
-                    strcpy(IDentifierTbl[i], token);//将新的标识符加入表中
-                    break;
-                }
-            }
-            printf(2,"(标识符,%s)\n", token);
-        }else if(syn >= 1 && syn <= 32){//保留字
-            printf(2,"(保留字,%s)\n", reserveWord[syn-1]);
-        }else if(syn == 99){//常数
-            printf(2,"(常数, %s)\n", token);
-        }else if(syn >= 33 && syn <= 68){
-            printf(2,"(运算符,%s)\n", operatorOrDelimiter[syn-33]);
-        }
-    }
-    for(i = 0; i < 100; i++){//输出所有的标识符
-        if(strcmp(IDentifierTbl[i], "") == 0) break;
-        printf(2, "第%d个标识符： %s\n", i+1, IDentifierTbl[i]);
-    }
-    exit();
-}
+
+// int main(){
+//     char s[100]="int main(int i){\n\ti = 0;\n char* s = 'this is fine'; \n};\n";
+//     char token[20] = {0};
+//     int syn = -1, p = 0;
+//     printf(2,"源程序为%s\n",s);
+//     filterResource(s);
+//     printf(2,"过滤后的程序为%s\n",s);
+//     int i;
+//     while(syn != 0){
+//         Scanner(&syn, s, token, &p);
+//         if(syn == 100){//标识符
+//             for(i=0; i<1000; i++){
+//                 if(strcmp(IDentifierTbl[i], token) == 0) break;//如果已经在表中，则不作处理
+//                 if(strcmp(IDentifierTbl[i], "") == 0){//如果出现了标识符表中未曾出现的元素
+//                     strcpy(IDentifierTbl[i], token);//将新的标识符加入表中
+//                     break;
+//                 }
+//             }
+//             printf(2,"(标识符,%s)\n", token);
+//         }else if(syn >= 1 && syn <= 32){//保留字
+//             printf(2,"(保留字,%s)\n", reserveWord[syn-1]);
+//         }else if(syn == 99){//常数
+//             printf(2,"(常数, %s)\n", token);
+//         }else if(syn >= 33 && syn <= 68){
+//             printf(2,"(运算符,%s)\n", operatorOrDelimiter[syn-33]);
+//         }
+//     }
+//     for(i = 0; i < 100; i++){//输出所有的标识符
+//         if(strcmp(IDentifierTbl[i], "") == 0) break;
+//         printf(2, "第%d个标识符： %s\n", i+1, IDentifierTbl[i]);
+//     }
+//     exit();
+// }

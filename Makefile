@@ -188,7 +188,6 @@ UPROGS=\
 	_shutdown\
 	_login\
 	_more\
-	_lexical_analysis\
 
 
 fs.img: mkfs README $(UPROGS)

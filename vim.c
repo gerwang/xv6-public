@@ -1,10 +1,13 @@
 //vim.c文件的修改者：江俊广
 
-#include "types.h"
-#include "user.h"
-#include "fcntl.h"
-#include "stat.h"
-#include "fs.h"
+// #include "types.h"
+// #include "user.h"
+// #include "fcntl.h"
+// #include "stat.h"
+// #include "fs.h"
+//此处暂时这么处理！！！
+#include "lexical_analysis.h"
+#include "lexical_analysis.c"
 #include "vim.h"
 #include "color.h"
 
@@ -14,8 +17,9 @@ initColorConfiguration()//初始化颜色配置
     //首先尝试从配置文件中读入颜色设置(该功能尚未实现)
     BACKGROUND_COLOR = BLACK;//背景色
     RESERVERED_WORD_COLOR = BLUE;//保留字的颜色
-    //PARAMETER_COLOR = DARKGREEN;//常量的颜色
+    PARAMETER_COLOR = DARKGREEN;//常量的颜色
     VARIABLE_COLOR = WHITE;//变量的颜色
+    OPERATOR_COLOR = WHITE;//运算符的颜色
     EMPHASIZE_WORD_COLOR = RED;//强调字体的颜色
 
     CONTROL_LINE_COLOR = YELLOW;//控制栏的颜色
@@ -172,6 +176,30 @@ showCoor()//显示行列号
         setconsole(coor(line, i + 65), tmp[i], coorColor, -1, 2);//然后输出当前光标位置的行、列号
 }
 
+void 
+updateCharColorByLine(int line){//更新文档中第line行的所有位置上的字符颜色
+    int syn = -1, p = 0;
+    char token[20] = {0};
+    int l, r, i = 0;//每个单词的左右界
+    memset(charColor, 0, sizeof(charColor));//清空原先的颜色
+    while(syn != 0 && i < 80){
+        l = p;
+        Scanner(&syn, textbuf[line], token, &p);
+        r = p;
+        int c = VARIABLE_COLOR;//默认为变量的颜色
+        if(isReserveWord(syn)){
+            c = RESERVERED_WORD_COLOR;
+        }else if(isIDentifier(syn)){
+            c = VARIABLE_COLOR;
+        }else if(isParameter(syn)){
+            c = PARAMETER_COLOR;
+        }else if(isOperatorOrDelimiter(syn)){
+            c = OPERATOR_COLOR;
+        }
+        for(i = l; i < r; i++) charColor[i] = c;//设置单词token每个位置的颜色
+    }
+}
+
 void showTextRange(int up, int down){//更新[up,down)行的内容
     int i, j, l;
     if(up < top) up = 0;
@@ -184,13 +212,25 @@ void showTextRange(int up, int down){//更新[up,down)行的内容
                 setconsole(coor(i,j), 0, combineColor(BLACK, CURRENT_LINE_COLOR), -1, 2);
     for (i = startline + up; i < startline + down; ++i){
         l = strlen(textbuf[i]);
-        for (j = 0; j < l; ++j)
+        // for (j = 0; j < l; ++j)
+        //     if( (i-startline) != cursorX)//如果不是焦点行
+        //         setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, BACKGROUND_COLOR), -1, 2);
+        //     else if( (j-left) != cursorY)//如果是焦点行
+        //         setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, CURRENT_LINE_COLOR), -1, 2);
+        //     else//如果是焦点位置
+        //         setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, CURRENT_POSITION_COLOR), -1, 2);
+        updateCharColorByLine(i);//更新文档第i行各个位置的字符颜色
+        int backgroundColor = BACKGROUND_COLOR;
+        if((i-startline) == cursorX) backgroundColor = CURRENT_LINE_COLOR;//如果是焦点行 
+        for (j = 0; j < l; ++j){
             if( (i-startline) != cursorX)//如果不是焦点行
-                setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, BACKGROUND_COLOR), -1, 2);
+                backgroundColor = BACKGROUND_COLOR;
             else if( (j-left) != cursorY)//如果是焦点行
-                setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, CURRENT_LINE_COLOR), -1, 2);
+                backgroundColor = CURRENT_LINE_COLOR;
             else//如果是焦点位置
-                setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, CURRENT_POSITION_COLOR), -1, 2);
+                backgroundColor = CURRENT_POSITION_COLOR;
+            setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(charColor[j], backgroundColor), -1, 2);
+        }
     }
     showCoor();
 }
