@@ -1,5 +1,4 @@
 # Initial process execs /init.
-# This code runs in user space.
 
 #include "syscall.h"
 #include "traps.h"
@@ -7,6 +6,7 @@
 
 # exec(init, argv)
 .globl start
+//这里是一个系统调用的例子，进程先把系统调用需要的参数压栈和将需要使用哪个系统调用放入eax寄存器中，然后再用int指令进行调用（int是中断指令，后面跟的是请求多少号中断）
 start:
   pushl $argv
   pushl $init

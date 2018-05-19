@@ -4,9 +4,8 @@
 #include "mmu.h"
 #include "proc.h"
 #include "fs.h"
-#include "spinlock.h"
-#include "sleeplock.h"
 #include "file.h"
+#include "spinlock.h"
 
 #define PIPESIZE 512
 
@@ -83,17 +82,17 @@ pipewrite(struct pipe *p, char *addr, int n)
   acquire(&p->lock);
   for(i = 0; i < n; i++){
     while(p->nwrite == p->nread + PIPESIZE){  //DOC: pipewrite-full
-      if(p->readopen == 0 || myproc()->killed){
+      if(p->readopen == 0 || proc->killed){//与kill的缺陷有关，详情查看kill函数(proc.c)
         release(&p->lock);
         return -1;
       }
-      wakeup(&p->nread);
+      wakeup(&p->nread);//当写满了就唤醒读进程，睡眠写进程
       sleep(&p->nwrite, &p->lock);  //DOC: pipewrite-sleep
     }
     p->data[p->nwrite++ % PIPESIZE] = addr[i];
   }
   wakeup(&p->nread);  //DOC: pipewrite-wakeup1
-  release(&p->lock);
+  release(&p->lock);//当写完了就唤醒读进程，睡眠写进程
   return n;
 }
 
@@ -104,15 +103,15 @@ piperead(struct pipe *p, char *addr, int n)
 
   acquire(&p->lock);
   while(p->nread == p->nwrite && p->writeopen){  //DOC: pipe-empty
-    if(myproc()->killed){
+    if(proc->killed){
       release(&p->lock);
       return -1;
-    }
+    }//没得可读，继续睡
     sleep(&p->nread, &p->lock); //DOC: piperead-sleep
   }
   for(i = 0; i < n; i++){  //DOC: piperead-copy
     if(p->nread == p->nwrite)
-      break;
+      break;//将缓冲区读完，唤醒写进程，睡眠读进程
     addr[i] = p->data[p->nread++ % PIPESIZE];
   }
   wakeup(&p->nwrite);  //DOC: piperead-wakeup
