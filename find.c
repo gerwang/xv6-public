@@ -55,6 +55,11 @@ char* getFnameFromPath(char* path,char* fname)
 	return fname;
 }
 
+/*
+*函数功能：动态规划实现含通配符字符串匹配
+*作者：赵哲晖
+*时间：2018/05/21
+*/
 int match(char * name, char * fname)
 {
 	int dm[15][15];
@@ -100,7 +105,7 @@ int compare(char *c1,char* c2)
 	return 0;
 }
 
-char*
+/*char*
 	fmtname(char *path)
 {
 	static char buf[DIRSIZ+1];
@@ -170,7 +175,7 @@ ls(char *path)
 	}
 	close(fd);
 }
-
+*/
 /*
 *函数功能：uint转化为实时时钟
 *作者：赵哲晖
@@ -357,6 +362,8 @@ int getFindType(char * type)
 
 int main(int argc, char *argv[])
 {
+	//int t = gettimestamp();
+	//printf(2,"%d",t);
 	if(argc < 3)
 	{
 		//printf(1, "please input the filename you want to find...\n");

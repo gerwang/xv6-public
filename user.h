@@ -29,6 +29,7 @@ void clearc(void);
 void insertc(int c);
 int shutdown(void);
 int lseek(int, int, int);
+int gettimestamp(void);
 
 // ulib.c
 int stat(char*, struct stat*);
