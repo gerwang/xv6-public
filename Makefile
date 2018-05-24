@@ -190,6 +190,7 @@ UPROGS=\
 	_shutdown\
 	_login\
 	_more\
+	_date\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
