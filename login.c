@@ -32,7 +32,7 @@ int checkpasswd(char *user,char *passwd)
    	while(i<n&&buf[i]!='\n')
   		ipasswd[j++]=buf[i++];
   	if(i==n) break;
-  	iuser[j]='\0';
+  	ipasswd[j]='\0';
   }
   
   close(fd);
