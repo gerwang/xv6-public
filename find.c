@@ -141,6 +141,25 @@ int compare(char *c1,char* c2)
 	}
 	return 0;
 }
+int compare1(char *c1,char* c2)
+{
+	int len1, len2;
+	len1 = strlen(c1);
+	len2 = strlen(c2);
+	if(len1 != len2)
+	{
+		return 0;
+	}
+	int i;
+	for(i = 0; i < len1; i++)
+	{
+		if(c1[i] != c2[i])
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
 
 char*
 	fmtname(char *path)
@@ -298,7 +317,7 @@ rtcdate* timestampToDate(uint stamp)
 }
 
 //按照文件名查找文件
-void find_name(char *path, char *fname, int type)
+void find_name(char *path, char *fname, int type, int deleteOrNot)
 {
 	char buf[512], *p;
 	int fd;
@@ -326,6 +345,10 @@ void find_name(char *path, char *fname, int type)
 					rtcdate * date = timestampToDate(st.ctime);
 					printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
 					free(date);
+					if(deleteOrNot == 1)
+					{
+						unlink(name);
+					}
 				}
 			}
 			else if(type == type_iname)
@@ -335,6 +358,10 @@ void find_name(char *path, char *fname, int type)
 					rtcdate * date = timestampToDate(st.ctime);
 					printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
 					free(date);
+					if(deleteOrNot == 1)
+					{
+						unlink(name);
+					}
 				}
 			}
 			break;
@@ -369,6 +396,10 @@ void find_name(char *path, char *fname, int type)
 					rtcdate * date = timestampToDate(st.ctime);
 					printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
 					free(date);
+					if(deleteOrNot == 1)
+					{
+						unlink(name);
+					}
 				}
 			}
 			else if(type == type_iname)
@@ -378,6 +409,10 @@ void find_name(char *path, char *fname, int type)
 					rtcdate * date = timestampToDate(st.ctime);
 					printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
 					free(date);
+					if(deleteOrNot == 1)
+					{
+						unlink(name);
+					}
 				}
 			}
 			getFnameFromPath(buf,name);
@@ -389,7 +424,7 @@ void find_name(char *path, char *fname, int type)
 				strcpy(bufnext,buf);
 				char * q = bufnext + strlen(bufnext);
 				*q = '/';
-				find_name(bufnext, fname, type);
+				find_name(bufnext, fname, type, deleteOrNot);
 			}
 		}
 		break;
@@ -398,7 +433,7 @@ void find_name(char *path, char *fname, int type)
 }
 
 //根据输入大小查找文件
-void find_size(char *path, int MoreOrLess, int size)
+void find_size(char *path, int MoreOrLess, int size, int deleteOrNot)
 {
 	char buf[512], *p;
 	int fd;
@@ -422,9 +457,16 @@ void find_size(char *path, int MoreOrLess, int size)
 			if( (st.size <= size && MoreOrLess == 0) || (st.size >= size && MoreOrLess == 1) || st.size == size)
 			{
 				getFnameFromPath(path, name);
-				rtcdate * date = timestampToDate(st.ctime);
-				printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
-				free(date);
+				if(compare1(name, ".") != 1 && compare1(name, "..") != 1)
+				{
+					rtcdate * date = timestampToDate(st.ctime);
+					printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
+					free(date);
+					if(deleteOrNot == 1)
+					{
+						unlink(name);
+					}
+				}
 			}
 			break;
 		}
@@ -454,9 +496,16 @@ void find_size(char *path, int MoreOrLess, int size)
 			if((st.size <= size && MoreOrLess == 0) || (st.size >= size && MoreOrLess == 1) || st.size == size)
 			{
 				getFnameFromPath(buf,name);
-				rtcdate * date = timestampToDate(st.ctime);
-				printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
-				free(date);
+				if(compare1(name, ".") != 1 && compare1(name, "..") != 1)
+				{
+					rtcdate * date = timestampToDate(st.ctime);
+					printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
+					free(date);
+					if(deleteOrNot == 1)
+					{
+						unlink(name);
+					}
+				}
 			}
 			getFnameFromPath(buf,name);
 			if((st.type == 1) && (compare(name,".") != 0) && (compare(name,"..") != 0) )
@@ -465,7 +514,7 @@ void find_size(char *path, int MoreOrLess, int size)
 				strcpy(bufnext,buf);
 				char * q = bufnext + strlen(bufnext);
 				*q = '/';
-				find_size(bufnext, MoreOrLess, size);
+				find_size(bufnext, MoreOrLess, size, deleteOrNot);
 			}
 		}
 		break;
@@ -474,7 +523,7 @@ void find_size(char *path, int MoreOrLess, int size)
 }
 
 //根据时间查找文件
-void find_time(char *path, int time, int type, int now)
+void find_time(char *path, int time, int type, int now, int deleteOrNot)
 {
 	
 	int timeDifference;//时间差
@@ -502,20 +551,28 @@ void find_time(char *path, int time, int type, int now)
 			timeDifference = now - st.ctime;
 			if(type == type_cmin)
 			{
-				if(timeDifference <= time*60)
+				if(timeDifference <= time*60 && (compare1(name, ".") != 1) && compare1(name, "..") != 1 )
 				{
 					rtcdate * date = timestampToDate(st.ctime);
 					printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
 					free(date);
+					if(deleteOrNot == 1)
+					{
+						unlink(name);
+					}
 				}
 			}
 			else if(type == type_ctime)
 			{
-				if(timeDifference <= time*3600)
+				if(timeDifference <= time*3600*24 && (compare1(name, ".") != 1) && compare1(name, "..") != 1)
 				{
 					rtcdate * date = timestampToDate(st.ctime);
 					printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
 					free(date);
+					if(deleteOrNot == 1)
+					{
+						unlink(name);
+					}
 				}
 			}
 			break;
@@ -549,20 +606,28 @@ void find_time(char *path, int time, int type, int now)
 				timeDifference = now - st.ctime;
 				if(type == type_cmin)
 				{
-					if(timeDifference <= time*60)
+					if(timeDifference <= time*60 && (compare1(name, ".") != 1) && compare1(name, "..") != 1)
 					{
 						rtcdate * date = timestampToDate(st.ctime);
 						printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
 						free(date);
+						if(deleteOrNot == 1)
+						{
+							unlink(name);
+						}
 					}
 				}
 				else if(type == type_ctime)
 				{
-					if(timeDifference <= time*3600)
+					if(timeDifference <= time*3600*24 && (compare1(name, ".") != 1) && compare1(name, "..") != 1)
 					{
 						rtcdate * date = timestampToDate(st.ctime);
 						printf(1, "%s path:%s%s  size:%d  time: %d/%d/%d %d:%d:%d\n", name, path, name, st.size,date->year,date->month,date->day,date->hour,date->minute,date->second);
 						free(date);
+						if(deleteOrNot == 1)
+						{
+							unlink(name);
+						}	
 					}
 				}
 				
@@ -572,7 +637,7 @@ void find_time(char *path, int time, int type, int now)
 					strcpy(bufnext,buf);
 					char * q = bufnext + strlen(bufnext);
 					*q = '/';
-					find_time(bufnext, time, type, now);
+					find_time(bufnext, time, type, now, deleteOrNot);
 				}
 			}
 
@@ -632,6 +697,7 @@ int main(int argc, char *argv[])
 	}
 	int len = 0;
 	int time = 0;
+	int deleteOrNot = 0;//查找到文件后是否删除，0表示不删除，1表示删除
 	switch(type)
 	{
 	case type_name:
@@ -645,7 +711,24 @@ int main(int argc, char *argv[])
 			printf(1, "Error: filename too long\n");
 			exit();
 		}
-		find_name(argv[1],argv[3], type_name);
+		if(argc == 4)
+		{
+			deleteOrNot = 0;
+			find_name(argv[1],argv[3], type_name, deleteOrNot);
+		}
+		else if(argc == 5)
+		{
+			if(compare1(argv[4], "delete") == 0)
+			{
+				printf(1, "Error: Instruction is not clear\n");
+				exit();
+			}
+			else
+			{
+				deleteOrNot = 1;
+				find_name(argv[1],argv[3], type_name, deleteOrNot);
+			}
+		}
 		break;
 	case type_iname:
 		if(argc < 4)
@@ -658,7 +741,24 @@ int main(int argc, char *argv[])
 			printf(1, "Error: filename too long\n");
 			exit();
 		}
-		find_name(argv[1], argv[3], type_iname);
+		if(argc == 4)
+		{
+			deleteOrNot = 0;
+			find_name(argv[1], argv[3], type_iname, deleteOrNot);
+		}
+		else if(argc == 5)
+		{
+			if(compare1(argv[4], "delete") == 0)
+			{
+				printf(1, "Error: Instruction is not clear\n");
+				exit();
+			}
+			else
+			{
+				deleteOrNot = 1;
+				find_name(argv[1],argv[3], type_name, deleteOrNot);
+			}
+		}
 		break;
 	case type_size:
 		if(argc < 4)
@@ -701,12 +801,49 @@ int main(int argc, char *argv[])
 				break;
 			}
 		}
+		if(argc == 4)
+		{
+			deleteOrNot = 0;
+			find_size(argv[1], MoreOrLess, size, deleteOrNot);
+		}
+		else if(argc == 5)
+		{
+			if(compare1(argv[4], "delete") == 0)
+			{
+				printf(1, "Error: Instruction is not clear\n");
+				exit();
+			}
+			else
+			{
+				deleteOrNot = 1;
+				find_size(argv[1], MoreOrLess, size, deleteOrNot);
+			}
+		}
+		break;
 
-		find_size(argv[1], MoreOrLess, size);
-		break;
+
 	case type_empty:
-		find_size(argv[1],0, 0);
+		if(argc == 3)
+		{
+			deleteOrNot = 0;
+			find_size(argv[1],0, 0, deleteOrNot);
+		}
+		else if(argc == 4)
+		{
+			if(compare1(argv[3], "delete") == 0)
+			{
+				printf(1, "Error: Instruction is not clear\n");
+				exit();
+			}
+			else
+			{
+				deleteOrNot = 1;
+				find_size(argv[1], 0, 0, deleteOrNot);
+			}
+		}
 		break;
+
+
 	case type_cmin:
 		if(argc < 4)
 		{
@@ -721,7 +858,7 @@ int main(int argc, char *argv[])
 
 		len = strlen(argv[3]);
 		time = 0;
-		for(int i = 1; i < len; i++)
+		for(int i = 0; i < len; i++)
 		{
 			if(argv[3][i] >= '0' && argv[3][i] <= '9')
 			{
@@ -735,10 +872,24 @@ int main(int argc, char *argv[])
 			}
 		}
 		int now = gettimestamp();//当前时间戳
-		rtcdate* nowdate = timestampToDate(now);//查找当前时间
-		printf(1, "timeNow: %d/%d/%d %d:%d:%d\n",nowdate->year,nowdate->month,nowdate->day,nowdate->hour,nowdate->minute,nowdate->second);
-		free(nowdate);
-		find_time(argv[1], time, type_cmin, now);
+
+		if(argc == 4)
+		{
+			deleteOrNot = 0;
+			find_time(argv[1], time, type_cmin, now, deleteOrNot);
+		}
+		else if(argc == 5)
+		{
+			if(compare1(argv[4], "delete") == 0)
+			{
+				printf(1, "Error: Instruction is not clear\n");
+			}
+			else
+			{
+				deleteOrNot = 1;
+				find_time(argv[1], time, type_cmin, now, deleteOrNot);
+			}
+		}
 		break;
 
 	case type_ctime:
@@ -755,7 +906,7 @@ int main(int argc, char *argv[])
 
 		len = strlen(argv[3]);
 		time = 0;
-		for(int i = 1; i < len; i++)
+		for(int i = 0; i < len; i++)
 		{
 			if(argv[3][i] >= '0' && argv[3][i] <= '9')
 			{
@@ -769,10 +920,23 @@ int main(int argc, char *argv[])
 			}
 		}
 		now = gettimestamp();//当前时间戳
-		nowdate = timestampToDate(now);//查找当前时间
-		printf(1, "timeNow: %d/%d/%d %d:%d:%d\n",nowdate->year,nowdate->month,nowdate->day,nowdate->hour,nowdate->minute,nowdate->second);
-		free(nowdate);
-		find_time(argv[1], time, type_ctime, now);
+		if(argc == 4)
+		{
+			find_time(argv[1], time, type_ctime, now, deleteOrNot);
+		}
+		else if(argc == 5)
+		{
+			if(compare1(argv[4], "delete") == 0)
+			{
+				deleteOrNot = 0;
+				printf(1, "Error: Instruction is not clear\n");
+			}
+			else
+			{
+				deleteOrNot = 1;
+				find_time(argv[1], time, type_cmin, now, deleteOrNot);
+			}
+		}
 		break;
 	default:
 		printf(1, "Not finished yet\n");
