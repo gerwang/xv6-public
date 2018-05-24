@@ -211,10 +211,69 @@ getcmd(char *buf, int nbuf)
   return 0;
 }
 
+void editDir(char * dir, char * cddir)    //edit current directory
+{
+  //printf(2,"%s %s\n",dir,cddir);
+  switch(*cddir)
+  {
+    case '/':
+      strcpy(dir,cddir);
+    break;
+    case '.':
+      if(cddir[1] == '.')
+      {
+        char * slash = dir;
+        char * p = dir;
+        while(*p)
+        {
+          if(*p == '/')
+            slash = p;
+          p++;
+        }
+        p = slash;
+        if(p == dir)
+          p++;
+        while(*p)
+        {
+          *p = 0;
+          p++;
+        }
+      }
+    break;
+    default:
+    {
+      char * p = dir;
+      while(*p)
+      {
+        p++;
+      }
+      p--;
+      if(*p == '/')
+      {
+        p++;
+        strcpy(p,cddir);
+        //printf(2,"%s %s\n",dir,cddir);
+      }
+      else
+      {
+        p++;
+        *p = '/';
+        p++;
+        strcpy(p,cddir);
+        //printf(2,"%s %s\n",dir,cddir);
+      }
+    }
+    break;
+  }
+}
+
 int
 main(void)
 {
   static char buf[100];
+  char dir[1000];
+  dir[0] = '/';
+  dir[1] = '\0';
   int fd;
   initHistory(&hs);
   getHistory(&hs);
@@ -241,6 +300,15 @@ main(void)
       buf[strlen(buf)] = 0;  // chop \n
       if(chdir(buf+3) < 0)
         printf(2, "cannot cd %s\n", buf+3);
+      else
+      {
+        editDir(dir,buf+3);
+      }
+      continue;
+    }
+    if(buf[0] == 'p' && buf[1] == 'w' && buf[2] == 'd')
+    {
+      printf(2,"%s\n",dir);
       continue;
     }
     if(fork1() == 0)
