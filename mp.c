@@ -1,6 +1,6 @@
 // Multiprocessor support
 // Search memory for MP description structures.
-// http://developer.intel.com/design/pentium/datashts/24201606.pdf
+// http://developer.intel.com/design/pentium/datashts/24201606.pdf fixme 这文档我没看过
 
 #include "types.h"
 #include "defs.h"
@@ -16,7 +16,7 @@ int ncpu;
 uchar ioapicid;
 
 static uchar
-sum(uchar *addr, int len)
+sum(uchar *addr, int len)//之后len字节的内存内容之和
 {
   int i, sum;
 
@@ -99,14 +99,15 @@ mpinit(void)
   struct mpioapic *ioapic;
 
   if((conf = mpconfig(&mp)) == 0)
-    panic("Expect to run on an SMP");
+    panic("Expect to run on an SMP");//对称多处理 在这个版本中，xv6不支持单
+  // 处理器，但是更老版本中已经支持了，为了简单在2017年夏天删掉了单处理器的代码
   ismp = 1;
   lapic = (uint*)conf->lapicaddr;
   for(p=(uchar*)(conf+1), e=(uchar*)conf+conf->length; p<e; ){
     switch(*p){
     case MPPROC:
       proc = (struct mpproc*)p;
-      if(ncpu < NCPU) {
+      if(ncpu < NCPU) {//多的处理器不要了
         cpus[ncpu].apicid = proc->apicid;  // apicid may differ from ncpu
         ncpu++;
       }
@@ -130,10 +131,12 @@ mpinit(void)
   if(!ismp)
     panic("Didn't find a suitable machine");
 
-  if(mp->imcrp){
+  if(mp->imcrp){// Interrupt Mask Clear Register 如果被设为1，就会关闭DDR2内存控制器的中断
     // Bochs doesn't support IMCR, so this doesn't run on Bochs.
     // But it would on real hardware.
     outb(0x22, 0x70);   // Select IMCR
     outb(0x23, inb(0x23) | 1);  // Mask external interrupts.
   }
 }
+
+//gerw done

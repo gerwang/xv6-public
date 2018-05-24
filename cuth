@@ -36,7 +36,7 @@ for($i=0; $i<@ARGV; $i++){
 			$old = $lines[$j];
 			$lines[$j] = "/* CUT-H */\n";
 			writefile($file, @lines);
-			if(system("make CC='gcc -Werror' $obj >/dev/null 2>\&1") != 0){
+			if(system("make CC='gcc -Werror' $obj >/dev/null 2>\&1") != 0){# 通过判断编译会不会出错来确定头文件是否有效
 				$lines[$j] = $old;
 			}else{
 				print STDERR "$file $old";
@@ -46,3 +46,5 @@ for($i=0; $i<@ARGV; $i++){
 	writefile($file, grep {!/CUT-H/} @lines);
 	system("rm =$file");
 }
+
+# gerw done

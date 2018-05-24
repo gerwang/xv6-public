@@ -1,7 +1,7 @@
 struct stat;
 struct rtcdate;
 
-// system calls
+// system calls in usys.S
 int fork(void);
 int exit(void) __attribute__((noreturn));
 int wait(void);
@@ -37,3 +37,5 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+
+//gerw done

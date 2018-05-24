@@ -1,4 +1,4 @@
-// Simple PIO-based (non-DMA) IDE driver code.
+// Simple PIO-based (non-DMA) IDE driver code. port-io based
 
 #include "types.h"
 #include "defs.h"
@@ -40,7 +40,7 @@ idewait(int checkerr)
 {
   int r;
 
-  while(((r = inb(0x1f7)) & (IDE_BSY|IDE_DRDY)) != IDE_DRDY)
+  while(((r = inb(0x1f7)) & (IDE_BSY|IDE_DRDY)) != IDE_DRDY)//data ready and not busy
     ;
   if(checkerr && (r & (IDE_DF|IDE_ERR)) != 0)
     return -1;
@@ -53,7 +53,7 @@ ideinit(void)
   int i;
 
   initlock(&idelock, "ide");
-  ioapicenable(IRQ_IDE, ncpu - 1);
+  ioapicenable(IRQ_IDE, ncpu - 1);//0号cpu等键盘，1号等磁盘
   idewait(0);
 
   // Check if disk 1 is present
@@ -101,7 +101,7 @@ idestart(struct buf *b)
 
 // Interrupt handler.
 void
-ideintr(void)
+ideintr(void)//read handler
 {
   struct buf *b;
 
@@ -141,6 +141,7 @@ iderw(struct buf *b)
 
   if(!holdingsleep(&b->lock))
     panic("iderw: buf not locked");
+
   if((b->flags & (B_VALID|B_DIRTY)) == B_VALID)
     panic("iderw: nothing to do");
   if(b->dev != 0 && !havedisk1)
@@ -152,11 +153,11 @@ iderw(struct buf *b)
   b->qnext = 0;
   for(pp=&idequeue; *pp; pp=&(*pp)->qnext)  //DOC:insert-queue
     ;
-  *pp = b;
+  *pp = b;//FIFO
 
   // Start disk if necessary.
   if(idequeue == b)
-    idestart(b);
+    idestart(b);// 否则等待中断来启动
 
   // Wait for request to finish.
   while((b->flags & (B_VALID|B_DIRTY)) != B_VALID){
@@ -166,3 +167,5 @@ iderw(struct buf *b)
 
   release(&idelock);
 }
+
+//gerw done

@@ -74,7 +74,7 @@ runcmd(struct cmd *cmd)
   case EXEC:
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
-      exit();
+      exit();//你敢！这不是直接退出shell了吗 init会重启一个新的shell
     exec(ecmd->argv[0], ecmd->argv);
     printf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
@@ -93,7 +93,7 @@ runcmd(struct cmd *cmd)
     lcmd = (struct listcmd*)cmd;
     if(fork1() == 0)
       runcmd(lcmd->left);
-    wait();
+    wait();//子进程一定会在这之前exit
     runcmd(lcmd->right);
     break;
 
@@ -102,8 +102,8 @@ runcmd(struct cmd *cmd)
     if(pipe(p) < 0)
       panic("pipe");
     if(fork1() == 0){
-      close(1);
-      dup(p[1]);
+      close(1);//不要标准输出了
+      dup(p[1]);//这里一定会填充上刚刚让出来的1
       close(p[0]);
       close(p[1]);
       runcmd(pcmd->left);
@@ -149,7 +149,7 @@ main(void)
 
   // Ensure that three file descriptors are open.
   while((fd = open("console", O_RDWR)) >= 0){
-    if(fd >= 3){
+    if(fd >= 3){//够数了
       close(fd);
       break;
     }
@@ -158,7 +158,7 @@ main(void)
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){
     if(buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
-      // Chdir must be called by the parent, not the child.
+      // Chdir must be called by the parent, not the child. 因为要好好改变sh自己的cwd
       buf[strlen(buf)-1] = 0;  // chop \n
       if(chdir(buf+3) < 0)
         printf(2, "cannot cd %s\n", buf+3);
@@ -166,20 +166,20 @@ main(void)
     }
     if(fork1() == 0)
       runcmd(parsecmd(buf));
-    wait();
+    wait();//子进程也要wait吗 不子進程會exit
   }
   exit();
 }
 
 void
-panic(char *s)
+panic(char *s)//这里是不致命的panic
 {
   printf(2, "%s\n", s);
   exit();
 }
 
 int
-fork1(void)
+fork1(void) //强制成功的fork
 {
   int pid;
 
@@ -204,7 +204,7 @@ execcmd(void)
 }
 
 struct cmd*
-redircmd(struct cmd *subcmd, char *file, char *efile, int mode, int fd)
+redircmd(struct cmd *subcmd, char *file, char *efile, int mode, int fd)//文件重定向
 {
   struct redircmd *cmd;
 
@@ -220,7 +220,7 @@ redircmd(struct cmd *subcmd, char *file, char *efile, int mode, int fd)
 }
 
 struct cmd*
-pipecmd(struct cmd *left, struct cmd *right)
+pipecmd(struct cmd *left, struct cmd *right)//管道
 {
   struct pipecmd *cmd;
 
@@ -308,7 +308,7 @@ gettoken(char **ps, char *es, char **q, char **eq)
 }
 
 int
-peek(char **ps, char *es, char *toks)
+peek(char **ps, char *es, char *toks)//找到第一个非空字符，判断它是否在给定字符集中
 {
   char *s;
 
@@ -332,7 +332,7 @@ parsecmd(char *s)
 
   es = s + strlen(s);
   cmd = parseline(&s, es);
-  peek(&s, es, "");
+  peek(&s, es, "");//吃掉空字符
   if(s != es){
     printf(2, "leftovers: %s\n", s);
     panic("syntax");
@@ -363,7 +363,7 @@ parsepipe(char **ps, char *es)
 {
   struct cmd *cmd;
 
-  cmd = parseexec(ps, es);
+  cmd = parseexec(ps, es);//总是在parsepipe里面调用parseexec
   if(peek(ps, es, "|")){
     gettoken(ps, es, 0, 0);
     cmd = pipecmd(cmd, parsepipe(ps, es));
@@ -389,7 +389,7 @@ parseredirs(struct cmd *cmd, char **ps, char *es)
       cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE, 1);
       break;
     case '+':  // >>
-      cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE, 1);
+      cmd = redircmd(cmd, q, eq, O_WRONLY|O_CREATE, 1);//> and >> both work
       break;
     }
   }
@@ -404,7 +404,7 @@ parseblock(char **ps, char *es)
   if(!peek(ps, es, "("))
     panic("parseblock");
   gettoken(ps, es, 0, 0);
-  cmd = parseline(ps, es);
+  cmd  = parseline(ps, es);
   if(!peek(ps, es, ")"))
     panic("syntax - missing )");
   gettoken(ps, es, 0, 0);
@@ -491,3 +491,4 @@ nulterminate(struct cmd *cmd)
   }
   return cmd;
 }
+//gerw done

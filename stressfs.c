@@ -23,7 +23,7 @@ main(int argc, char *argv[])
   printf(1, "stressfs starting\n");
   memset(data, 'a', sizeof(data));
 
-  for(i = 0; i < 4; i++)
+  for(i = 0; i < 4; i++)//5个进程
     if(fork() > 0)
       break;
 
@@ -47,3 +47,5 @@ main(int argc, char *argv[])
 
   exit();
 }
+
+//gerw done

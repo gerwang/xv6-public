@@ -6,7 +6,7 @@ memset(void *dst, int c, uint n)
 {
   if ((int)dst%4 == 0 && n%4 == 0){
     c &= 0xFF;
-    stosl(dst, (c<<24)|(c<<16)|(c<<8)|c, n/4);
+    stosl(dst, (c<<24)|(c<<16)|(c<<8)|c, n/4);//intset
   } else
     stosb(dst, c, n);
   return dst;
@@ -36,7 +36,7 @@ memmove(void *dst, const void *src, uint n)
 
   s = src;
   d = dst;
-  if(s < d && s + n > d){
+  if(s < d && s + n > d){//处理重叠的情况 任何情况下mememove都能不重叠的完成
     s += n;
     d += n;
     while(n-- > 0)
@@ -48,7 +48,7 @@ memmove(void *dst, const void *src, uint n)
   return dst;
 }
 
-// memcpy exists to placate GCC.  Use memmove.
+// memcpy exists to placate GCC.  Use memmove.安抚
 void*
 memcpy(void *dst, const void *src, uint n)
 {
@@ -103,3 +103,4 @@ strlen(const char *s)
   return n;
 }
 
+//gerw done

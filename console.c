@@ -1,5 +1,5 @@
 // Console input and output.
-// Input is from the keyboard or serial port.
+// Input is from the keyboard or serial port.串口 串列
 // Output is written to the screen and serial port.
 
 #include "types.h"
@@ -28,7 +28,7 @@ static void
 printint(int xx, int base, int sign)
 {
   static char digits[] = "0123456789abcdef";
-  char buf[16];
+  char buf[16];//太拼了，不能输出2进制
   int i;
   uint x;
 
@@ -50,7 +50,7 @@ printint(int xx, int base, int sign)
 }
 //PAGEBREAK: 50
 
-// Print to the console. only understands %d, %x, %p, %s.
+// Print to the console. only understands %d, %x, %p, %s. 四种参数都和uint一样大
 void
 cprintf(char *fmt, ...)
 {
@@ -128,6 +128,8 @@ panic(char *s)
 #define CRTPORT 0x3d4
 static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory
 
+// https://bos.asmhackers.net/docs/vga/vgadoc4b/CGA.TXT
+
 static void
 cgaputc(int c)
 {
@@ -135,16 +137,16 @@ cgaputc(int c)
 
   // Cursor position: col + 80*row.
   outb(CRTPORT, 14);
-  pos = inb(CRTPORT+1) << 8;
+  pos = inb(CRTPORT+1) << 8;//高6位的地址
   outb(CRTPORT, 15);
-  pos |= inb(CRTPORT+1);
+  pos |= inb(CRTPORT+1);//读取cursor当前的行列 低8位的地址
 
   if(c == '\n')
-    pos += 80 - pos%80;
+    pos += 80 - pos%80;//跳过这一行
   else if(c == BACKSPACE){
     if(pos > 0) --pos;
   } else
-    crt[pos++] = (c&0xff) | 0x0700;  // black on white
+    crt[pos++] = (c&0xff) | 0x0700;  // black on  white 模式 是 grey text on black background DMA
 
   if(pos < 0 || pos > 25*80)
     panic("pos under/overflow");
@@ -172,18 +174,18 @@ consputc(int c)
   }
 
   if(c == BACKSPACE){
-    uartputc('\b'); uartputc(' '); uartputc('\b');
+    uartputc('\b'); uartputc(' '); uartputc('\b');//fixme 为什么要这么做
   } else
     uartputc(c);
   cgaputc(c);
 }
 
-#define INPUT_BUF 128
+#define INPUT_BUF 128 //一行命令最多只能有这么多字符
 struct {
   char buf[INPUT_BUF];
-  uint r;  // Read index
-  uint w;  // Write index
-  uint e;  // Edit index
+  uint r;  // Read index 读到的地址
+  uint w;  // Write index 读到的末尾
+  uint e;  // Edit index 当前行命令的末尾
 } input;
 
 #define C(x)  ((x)-'@')  // Control-x
@@ -194,7 +196,7 @@ consoleintr(int (*getc)(void))
   int c, doprocdump = 0;
 
   acquire(&cons.lock);
-  while((c = getc()) >= 0){
+  while((c = getc()) >= 0){//注意是传进来的getc
     switch(c){
     case C('P'):  // Process listing.
       // procdump() locks cons.lock indirectly; invoke later
@@ -218,7 +220,7 @@ consoleintr(int (*getc)(void))
         c = (c == '\r') ? '\n' : c;
         input.buf[input.e++ % INPUT_BUF] = c;
         consputc(c);
-        if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
+        if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){//当前命令达到最大长度之后就强制执行
           input.w = input.e;
           wakeup(&input.r);
         }
@@ -254,7 +256,7 @@ consoleread(struct inode *ip, char *dst, int n)
     if(c == C('D')){  // EOF
       if(n < target){
         // Save ^D for next time, to make sure
-        // caller gets a 0-byte result.
+        // caller gets a 0-byte result.专门给最后一次read留个0长度的EOF
         input.r--;
       }
       break;
@@ -286,7 +288,7 @@ consolewrite(struct inode *ip, char *buf, int n)
 }
 
 void
-consoleinit(void)
+consoleinit(void)//设置中断向量在哪里？ devsw只是设备文件，没有专门的读console的中断，有键盘的
 {
   initlock(&cons.lock, "console");
 
@@ -297,3 +299,4 @@ consoleinit(void)
   ioapicenable(IRQ_KBD, 0);
 }
 
+//gerw done

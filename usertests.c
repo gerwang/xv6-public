@@ -31,7 +31,7 @@ iputtest(void)
     printf(stdout, "unlink ../iputdir failed\n");
     exit();
   }
-  if(chdir("/") < 0){
+  if(chdir("/") < 0){//应该是因为内存里面的ref还没有等于0，所以还没有释放
     printf(stdout, "chdir / failed\n");
     exit();
   }
@@ -1114,7 +1114,7 @@ subdir(void)
   printf(1, "subdir ok\n");
 }
 
-// test writes that are larger than the log.
+// test writes that are larger than the log. 应该会被分为许多小日志从而成功
 void
 bigwrite(void)
 {
@@ -1216,7 +1216,7 @@ fourteen(void)
     printf(1, "mkdir 12345678901234/123456789012345 failed\n");
     exit();
   }
-  fd = open("123456789012345/123456789012345/123456789012345", O_CREATE);
+  fd = open("123456789012345/123456789012345/123456789012345", O_CREATE);//fixme 我觉得这应该失败才对啊
   if(fd < 0){
     printf(1, "create 123456789012345/123456789012345/123456789012345 failed\n");
     exit();
@@ -1801,3 +1801,5 @@ main(int argc, char *argv[])
 
   exit();
 }
+
+//gerw done

@@ -53,7 +53,7 @@ sys_sbrk(void)
   addr = myproc()->sz;
   if(growproc(n) < 0)
     return -1;
-  return addr;
+  return addr;//返回新内存的地址
 }
 
 int
@@ -67,7 +67,7 @@ sys_sleep(void)
   acquire(&tickslock);
   ticks0 = ticks;
   while(ticks - ticks0 < n){
-    if(myproc()->killed){
+    if(myproc()->killed){//被kill命令之类的kill掉
       release(&tickslock);
       return -1;
     }
@@ -89,3 +89,4 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+//gerw done

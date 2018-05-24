@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Decode the symbols from a panic EIP list
+# Decode the symbols from a panic EIP list 解析符号把地址变成函数名 fixme 很有用但不知道怎么用
 
 # Find a working addr2line
 for p in i386-jos-elf-addr2line addr2line; do
@@ -12,3 +12,5 @@ done
 
 # Enable as much pretty-printing as this addr2line can do
 $p $($p -h | grep ' -[aipsf] ' | awk '{print $1}') -e kernel "$@"
+
+# gerw done

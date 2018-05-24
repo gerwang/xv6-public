@@ -14,13 +14,13 @@ wc(int fd, char *name)
   inword = 0;
   while((n = read(fd, buf, sizeof(buf))) > 0){
     for(i=0; i<n; i++){
-      c++;
+      c++;//字符数
       if(buf[i] == '\n')
-        l++;
+        l++;//换行数
       if(strchr(" \r\t\n\v", buf[i]))
         inword = 0;
       else if(!inword){
-        w++;
+        w++;//单词数
         inword = 1;
       }
     }
@@ -52,3 +52,4 @@ main(int argc, char *argv[])
   }
   exit();
 }
+//gerw done

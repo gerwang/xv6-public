@@ -27,8 +27,8 @@ struct proghdr {
   uint off;
   uint vaddr;
   uint paddr;
-  uint filesz;
-  uint memsz;
+  uint filesz;//
+  uint memsz;//用这种方式避免在磁盘上存储用于补齐的0
   uint flags;
   uint align;
 };
@@ -40,3 +40,5 @@ struct proghdr {
 #define ELF_PROG_FLAG_EXEC      1
 #define ELF_PROG_FLAG_WRITE     2
 #define ELF_PROG_FLAG_READ      4
+
+//gerw done

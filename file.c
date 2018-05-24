@@ -72,7 +72,7 @@ fileclose(struct file *f)
 
   if(ff.type == FD_PIPE)
     pipeclose(ff.pipe, ff.writable);
-  else if(ff.type == FD_INODE){
+  else if(ff.type == FD_INODE){//设备文件永远不会关闭
     begin_op();
     iput(ff.ip);
     end_op();
@@ -155,3 +155,4 @@ filewrite(struct file *f, char *addr, int n)
   panic("filewrite");
 }
 
+//gerw done

@@ -68,7 +68,7 @@ incorrectly record that interrupts *were* enabled.
 This doesn't matter, because if it was safe to be
 running with interrupts enabled before the context
 switch, it is still safe (and arguably more correct)
-to run with them enabled after the context switch too.
+to run with them enabled after the context switch too. fixme 这一段看不懂 为什么是安全的
 
 In fact it would be safe if scheduler always set
 	c->intena = 1;
@@ -137,4 +137,6 @@ allowed to re-order statements.
 
 The real code saves a copy of np->pid, then acquires a lock
 around the write to np->state. The acquire() prevents the
-compiler from re-ordering.
+compiler from re-ordering. acquire还有避免重排的作用
+
+# gerw done

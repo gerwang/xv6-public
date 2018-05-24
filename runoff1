@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+# perl版
+
 $n = 0;
 $v = 0;
 if($ARGV[0] eq "-v") {

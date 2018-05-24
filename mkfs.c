@@ -41,7 +41,7 @@ void rsect(uint sec, void *buf);
 uint ialloc(ushort type);
 void iappend(uint inum, void *p, int n);
 
-// convert to intel byte order
+// convert to intel byte order 小端序
 ushort
 xshort(ushort x)
 {
@@ -112,7 +112,7 @@ main(int argc, char *argv[])
 
   memset(buf, 0, sizeof(buf));
   memmove(buf, &sb, sizeof(sb));
-  wsect(1, buf);
+  wsect(1, buf);//write superblock
 
   rootino = ialloc(T_DIR);
   assert(rootino == ROOTINO);
@@ -125,10 +125,10 @@ main(int argc, char *argv[])
   bzero(&de, sizeof(de));
   de.inum = xshort(rootino);
   strcpy(de.name, "..");
-  iappend(rootino, &de, sizeof(de));
+  iappend(rootino, &de, sizeof(de));//append . and .. to root itself
 
   for(i = 2; i < argc; i++){
-    assert(index(argv[i], '/') == 0);
+    assert(index(argv[i], '/') == 0);//must started with '/'
 
     if((fd = open(argv[i], 0)) < 0){
       perror(argv[i]);
@@ -159,10 +159,10 @@ main(int argc, char *argv[])
   rinode(rootino, &din);
   off = xint(din.size);
   off = ((off/BSIZE) + 1) * BSIZE;
-  din.size = xint(off);
+  din.size = xint(off);//占用整个块
   winode(rootino, &din);
 
-  balloc(freeblock);
+  balloc(freeblock);//write bitmap
 
   exit(0);
 }
@@ -295,3 +295,5 @@ iappend(uint inum, void *xp, int n)
   din.size = xint(off);
   winode(inum, &din);
 }
+
+//gerw done

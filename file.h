@@ -22,16 +22,17 @@ struct inode {
   short minor;
   short nlink;
   uint size;
-  uint addrs[NDIRECT+1];
+  uint addrs[NDIRECT+1];//之所以多开一个，是因为最后一个是指向NINDIRECT的块
 };
 
 // table mapping major device number to
 // device functions
 struct devsw {
-  int (*read)(struct inode*, char*, int);
+  int (*read)(struct inode*, char*, int);//major minor由设备驱动自己解决
   int (*write)(struct inode*, char*, int);
 };
 
 extern struct devsw devsw[];
 
 #define CONSOLE 1
+//gerw done

@@ -50,7 +50,7 @@ ioapicinit(void)
 {
   int i, id, maxintr;
 
-  ioapic = (volatile struct ioapic*)IOAPIC;
+  ioapic = (volatile struct ioapic*)IOAPIC;//映射到的内存
   maxintr = (ioapicread(REG_VER) >> 16) & 0xFF;
   id = ioapicread(REG_ID) >> 24;
   if(id != ioapicid)
@@ -65,7 +65,7 @@ ioapicinit(void)
 }
 
 void
-ioapicenable(int irq, int cpunum)
+ioapicenable(int irq, int cpunum)//这个设备的中断发给哪个cpu
 {
   // Mark interrupt edge-triggered, active high,
   // enabled, and routed to the given cpunum,
@@ -73,3 +73,5 @@ ioapicenable(int irq, int cpunum)
   ioapicwrite(REG_TABLE+2*irq, T_IRQ0 + irq);
   ioapicwrite(REG_TABLE+2*irq+1, cpunum << 24);
 }
+
+//gerw done

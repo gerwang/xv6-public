@@ -1,9 +1,9 @@
 // Per-CPU state
 struct cpu {
-  uchar apicid;                // Local APIC ID
+  uchar apicid;                // Local APIC ID 让pic找到正确的cpu？ 中断的id
   struct context *scheduler;   // swtch() here to enter scheduler
   struct taskstate ts;         // Used by x86 to find stack for interrupt
-  struct segdesc gdt[NSEGS];   // x86 global descriptor table
+  struct segdesc gdt[NSEGS];   // x86 global descriptor table 全局描述符
   volatile uint started;       // Has the CPU started?
   int ncli;                    // Depth of pushcli nesting.
   int intena;                  // Were interrupts enabled before pushcli?
@@ -56,3 +56,5 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+// gerw done

@@ -13,7 +13,7 @@ void freerange(void *vstart, void *vend);
 extern char end[]; // first address after kernel loaded from ELF file
                    // defined by the kernel linker script in kernel.ld
 
-struct run {
+struct run {//放在空闲页面的开头
   struct run *next;
 };
 
@@ -40,14 +40,14 @@ void
 kinit2(void *vstart, void *vend)
 {
   freerange(vstart, vend);
-  kmem.use_lock = 1;
+  kmem.use_lock = 1;//在此之后才有多进程，所以才需要上锁
 }
 
 void
 freerange(void *vstart, void *vend)
 {
   char *p;
-  p = (char*)PGROUNDUP((uint)vstart);
+  p = (char*)PGROUNDUP((uint)vstart);//严格释放这个区间以内的，两边的可以不释放
   for(; p + PGSIZE <= (char*)vend; p += PGSIZE)
     kfree(p);
 }
@@ -94,3 +94,4 @@ kalloc(void)
   return (char*)r;
 }
 
+//gerw done

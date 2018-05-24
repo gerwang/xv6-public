@@ -20,7 +20,7 @@ grep(char *pattern, int fd)
     p = buf;
     while((q = strchr(p, '\n')) != 0){
       *q = 0;
-      if(match(pattern, p)){
+      if(match(pattern, p)){//不会跨行匹配
         *q = '\n';
         write(1, p, q+1 - p);
       }
@@ -105,3 +105,4 @@ int matchstar(int c, char *re, char *text)
   return 0;
 }
 
+//gerw done

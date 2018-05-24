@@ -289,3 +289,6 @@ define _printdescs
     set $i = $i + 1
   end
 end
+
+# gerw done
+# 可以优美的输出寄存器等的内容

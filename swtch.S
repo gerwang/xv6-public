@@ -8,8 +8,8 @@
 
 .globl swtch
 swtch:
-  movl 4(%esp), %eax
-  movl 8(%esp), %edx
+  movl 4(%esp), %eax # old
+  movl 8(%esp), %edx # new
 
   # Save old callee-save registers
   pushl %ebp
@@ -18,7 +18,7 @@ swtch:
   pushl %edi
 
   # Switch stacks
-  movl %esp, (%eax)
+  movl %esp, (%eax) # fixme 从哪句话开始进入用户程序的 到底esp存到了哪里
   movl %edx, %esp
 
   # Load new callee-save registers
@@ -27,3 +27,5 @@ swtch:
   popl %ebx
   popl %ebp
   ret
+
+# gerw done

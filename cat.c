@@ -10,7 +10,7 @@ cat(int fd)
   int n;
 
   while((n = read(fd, buf, sizeof(buf))) > 0) {
-    if (write(1, buf, n) != n) {
+    if (write(1, buf, n) != n) {//1 就是标准输出流
       printf(1, "cat: write error\n");
       exit();
     }
@@ -41,3 +41,5 @@ main(int argc, char *argv[])
   }
   exit();
 }
+
+//gerw done

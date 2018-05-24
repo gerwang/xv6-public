@@ -20,9 +20,9 @@ tvinit(void)
   int i;
 
   for(i = 0; i < 256; i++)
-    SETGATE(idt[i], 0, SEG_KCODE<<3, vectors[i], 0);
-  SETGATE(idt[T_SYSCALL], 1, SEG_KCODE<<3, vectors[T_SYSCALL], DPL_USER);
-
+    SETGATE(idt[i], 0, SEG_KCODE<<3, vectors[i], 0);//这些都是内核级别的调用
+  SETGATE(idt[T_SYSCALL], 1, SEG_KCODE<<3, vectors[T_SYSCALL], DPL_USER);//fixme vector是放在data段里面的，为什么这里要放成code段 全局变量在哪个段里面
+  //syscall时允许别的中断
   initlock(&tickslock, "time");
 }
 
@@ -36,7 +36,7 @@ idtinit(void)
 void
 trap(struct trapframe *tf)
 {
-  if(tf->trapno == T_SYSCALL){
+  if(tf->trapno == T_SYSCALL){//用户程序引起
     if(myproc()->killed)
       exit();
     myproc()->tf = tf;
@@ -46,15 +46,15 @@ trap(struct trapframe *tf)
     return;
   }
 
-  switch(tf->trapno){
+  switch(tf->trapno){//硬件引起的中断
   case T_IRQ0 + IRQ_TIMER:
     if(cpuid() == 0){
       acquire(&tickslock);
-      ticks++;
+      ticks++;//只要cpu0的时钟
       wakeup(&ticks);
       release(&tickslock);
     }
-    lapiceoi();
+    lapiceoi();//fixme
     break;
   case T_IRQ0 + IRQ_IDE:
     ideintr();
@@ -72,7 +72,7 @@ trap(struct trapframe *tf)
     lapiceoi();
     break;
   case T_IRQ0 + 7:
-  case T_IRQ0 + IRQ_SPURIOUS:
+  case T_IRQ0 + IRQ_SPURIOUS://伪中断 一类不希望被产生的硬件中断。发生的原因有很多种，如中断线路上电气信号异常，或是中断请求设备本身有问题。
     cprintf("cpu%d: spurious interrupt at %x:%x\n",
             cpuid(), tf->cs, tf->eip);
     lapiceoi();
@@ -91,7 +91,7 @@ trap(struct trapframe *tf)
             "eip 0x%x addr 0x%x--kill proc\n",
             myproc()->pid, myproc()->name, tf->trapno,
             tf->err, cpuid(), tf->eip, rcr2());
-    myproc()->killed = 1;
+    myproc()->killed = 1;//杀死进程
   }
 
   // Force process exit if it has been killed and is in user space.
@@ -104,9 +104,10 @@ trap(struct trapframe *tf)
   // If interrupts were on while locks held, would need to check nlock.
   if(myproc() && myproc()->state == RUNNING &&
      tf->trapno == T_IRQ0+IRQ_TIMER)
-    yield();
+    yield();//强制释放cpu 这个函数会返回吗，会但可能是很久以后了，就从这里返回
 
   // Check if the process has been killed since we yielded
   if(myproc() && myproc()->killed && (tf->cs&3) == DPL_USER)
     exit();
 }
+//gerw done

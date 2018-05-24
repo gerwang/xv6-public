@@ -1,3 +1,4 @@
+# 为什么没有.c的编译呢？因为每个有自己的.d告诉makefile如何制作.o  自己添加的源代码（内核态和用户态）分别放在哪里？ 问兆伟
 OBJS = \
 	bio.o\
 	console.o\
@@ -85,21 +86,27 @@ LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
 
 xv6.img: bootblock kernel fs.img
 	dd if=/dev/zero of=xv6.img count=10000
+# 最多10000个磁盘块
 	dd if=bootblock of=xv6.img conv=notrunc
+# 第一个磁盘块给boot
 	dd if=kernel of=xv6.img seek=1 conv=notrunc
+# 其余的给kernel
 
 xv6memfs.img: bootblock kernelmemfs
 	dd if=/dev/zero of=xv6memfs.img count=10000
 	dd if=bootblock of=xv6memfs.img conv=notrunc
 	dd if=kernelmemfs of=xv6memfs.img seek=1 conv=notrunc
+# 将文件系统保存在内存里面
 
 bootblock: bootasm.S bootmain.c
 	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -I. -c bootmain.c
+# -fno-pic 不使用位置无关代码
 	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c bootasm.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7C00 -o bootblock.o bootasm.o bootmain.o
 	$(OBJDUMP) -S bootblock.o > bootblock.asm
 	$(OBJCOPY) -S -O binary -j .text bootblock.o bootblock
 	./sign.pl bootblock
+# 把bootblock补全成512字节
 
 entryother: entryother.S
 	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c entryother.S
@@ -114,17 +121,19 @@ initcode: initcode.S
 	$(OBJDUMP) -S initcode.o > initcode.asm
 
 kernel: $(OBJS) entry.o entryother initcode kernel.ld
+# 通过添加OBJS添加源文件添加我们自己的文件
 	$(LD) $(LDFLAGS) -T kernel.ld -o kernel entry.o $(OBJS) -b binary initcode entryother
 	$(OBJDUMP) -S kernel > kernel.asm
 	$(OBJDUMP) -t kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > kernel.sym
 
-# kernelmemfs is a copy of kernel that maintains the
+# kernelmemfs is a copy of kernel that maintains the——
 # disk image in memory instead of writing to a disk.
 # This is not so useful for testing persistent storage or
 # exploring disk buffering implementations, but it is
 # great for testing the kernel on real hardware without
 # needing a scratch disk.
 MEMFSOBJS = $(filter-out ide.o,$(OBJS)) memide.o
+# 不包含ide.o
 kernelmemfs: $(MEMFSOBJS) entry.o entryother initcode kernel.ld fs.img
 	$(LD) $(LDFLAGS) -T kernel.ld -o kernelmemfs entry.o  $(MEMFSOBJS) -b binary initcode entryother fs.img
 	$(OBJDUMP) -S kernelmemfs > kernelmemfs.asm
@@ -132,6 +141,7 @@ kernelmemfs: $(MEMFSOBJS) entry.o entryother initcode kernel.ld fs.img
 
 tags: $(OBJS) entryother.S _init
 	etags *.S *.c
+# fixme etags 是什么软件
 
 vectors.S: vectors.pl
 	perl vectors.pl > vectors.S
@@ -240,6 +250,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 # rename it to rev0 or rev1 or so on and then
 # check in that version.
 
+# TODO 如何添加自己的可执行文件，如自己的cat
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\

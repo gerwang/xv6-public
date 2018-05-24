@@ -40,7 +40,7 @@ outsl(int port, const void *addr, int cnt)
 }
 
 static inline void
-stosb(void *addr, int data, int cnt)
+stosb(void *addr, int data, int cnt)//data是要初始化的字节的值，感觉类似memset
 {
   asm volatile("cld; rep stosb" :
                "=D" (addr), "=c" (cnt) :
@@ -167,10 +167,10 @@ struct trapframe {
   ushort padding3;
   ushort ds;
   ushort padding4;
-  uint trapno;
+  uint trapno;//在vector.S中push
 
   // below here defined by x86 hardware
-  uint err;
+  uint err;//在vector.S中push
   uint eip;
   ushort cs;
   ushort padding5;
@@ -181,3 +181,5 @@ struct trapframe {
   ushort ss;
   ushort padding6;
 };
+
+//gerw done

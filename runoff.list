@@ -75,3 +75,4 @@ sh.c
 bootasm.S
 bootmain.c
 
+#需要打印的代码

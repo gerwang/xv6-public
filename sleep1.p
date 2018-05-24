@@ -1,4 +1,7 @@
 /*
+ * PROMELA (Process or Protocol Meta Language) is a verification modeling language introduced by Gerard J. Holzmann.
+ * The language allows for the dynamic creation of concurrent processes to model, for example, distributed systems.
+ *
 This file defines a Promela model for xv6's
 acquire, release, sleep, and wakeup, along with
 a model of a simple producer/consumer queue.

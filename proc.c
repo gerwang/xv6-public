@@ -67,7 +67,7 @@ myproc(void) {
 
 //PAGEBREAK: 32
 // Look in the process table for an UNUSED proc.
-// If found, change state to EMBRYO and initialize
+// If found, change state to EMBRYO and initialize EMBRYO 指的是在申请到完全创立之间的一个阶段吗 胚胎
 // state required to run in the kernel.
 // Otherwise return 0.
 static struct proc*
@@ -96,7 +96,7 @@ found:
     p->state = UNUSED;
     return 0;
   }
-  sp = p->kstack + KSTACKSIZE;
+  sp = p->kstack + KSTACKSIZE;//当前内核栈顶
 
   // Leave room for trap frame.
   sp -= sizeof *p->tf;
@@ -105,7 +105,7 @@ found:
   // Set up new context to start executing at forkret,
   // which returns to trapret.
   sp -= 4;
-  *(uint*)sp = (uint)trapret;
+  *(uint*)sp = (uint)trapret;//这是一个函数，是forkret返回的eip
 
   sp -= sizeof *p->context;
   p->context = (struct context*)sp;
@@ -118,10 +118,10 @@ found:
 //PAGEBREAK: 32
 // Set up first user process.
 void
-userinit(void)
+userinit(void)//只有第一个进程用这个函数
 {
   struct proc *p;
-  extern char _binary_initcode_start[], _binary_initcode_size[];
+  extern char _binary_initcode_start[], _binary_initcode_size[];//initcode.S
 
   p = allocproc();
   
@@ -135,9 +135,9 @@ userinit(void)
   p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
   p->tf->es = p->tf->ds;
   p->tf->ss = p->tf->ds;
-  p->tf->eflags = FL_IF;
+  p->tf->eflags = FL_IF;//当这个进程运行的时候，就会开启中断? 否，在scheduler()里面打开中断 fixme eflags&FL_IF 和 sti 分别管啥
   p->tf->esp = PGSIZE;
-  p->tf->eip = 0;  // beginning of initcode.S
+  p->tf->eip = 0;  // beginning of initcode.S 这个是特别的，不用使用forkret
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
@@ -148,7 +148,7 @@ userinit(void)
   // because the assignment might not be atomic.
   acquire(&ptable.lock);
 
-  p->state = RUNNABLE;
+  p->state = RUNNABLE;//就把这个进程放在进程表里面了
 
   release(&ptable.lock);
 }
@@ -170,7 +170,7 @@ growproc(int n)
       return -1;
   }
   curproc->sz = sz;
-  switchuvm(curproc);
+  switchuvm(curproc);//fixme 以前也在用户内存空间中，只是因为改了页表和内存大小所以需要重新载入一次
   return 0;
 }
 
@@ -223,9 +223,9 @@ fork(void)
 
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
-// until its parent calls wait() to find out it exited.
+// until its parent calls wait() to find out it exited. 是在wait的时候清除zombie的吗 是的
 void
-exit(void)
+exit(void)//发现exit并没有改killed，所以exit不算killed
 {
   struct proc *curproc = myproc();
   struct proc *p;
@@ -256,7 +256,7 @@ exit(void)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->parent == curproc){
       p->parent = initproc;
-      if(p->state == ZOMBIE)
+      if(p->state == ZOMBIE)//免得没有父母来收尸了
         wakeup1(initproc);
     }
   }
@@ -328,7 +328,7 @@ scheduler(void)
   
   for(;;){
     // Enable interrupts on this processor.
-    sti();
+    sti();//在这里打开中断
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
@@ -343,7 +343,7 @@ scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
 
-      swtch(&(c->scheduler), p->context);
+      swtch(&(c->scheduler), p->context);//咋没有释放ptable.lock呢 进去之后就是默认自己拿到了锁，然后回来时又拿回来
       switchkvm();
 
       // Process is done running for now.
@@ -370,7 +370,7 @@ sched(void)
 
   if(!holding(&ptable.lock))
     panic("sched ptable.lock");
-  if(mycpu()->ncli != 1)
+  if(mycpu()->ncli != 1)//由于所有时候的ncli都是1所以不用存下来
     panic("sched locks");
   if(p->state == RUNNING)
     panic("sched running");
@@ -405,7 +405,7 @@ forkret(void)
     // of a regular process (e.g., they call sleep), and thus cannot
     // be run from main().
     first = 0;
-    iinit(ROOTDEV);
+    iinit(ROOTDEV);//在第一个进程前启动磁盘和日志
     initlog(ROOTDEV);
   }
 
@@ -439,7 +439,7 @@ sleep(void *chan, struct spinlock *lk)
   p->chan = chan;
   p->state = SLEEPING;
 
-  sched();
+  sched();//如何持有ptable的lock那么就不释放了吗 这里面会释放的，然后又会获得锁然后返回来
 
   // Tidy up.
   p->chan = 0;
@@ -499,7 +499,7 @@ kill(int pid)
 //PAGEBREAK: 36
 // Print a process listing to console.  For debugging.
 // Runs when user types ^P on console.
-// No lock to avoid wedging a stuck machine further.
+// No lock to avoid wedging a stuck machine further. fixme 所以说我们平时没事不要乱按ctrl+P
 void
 procdump(void)
 {
@@ -532,3 +532,5 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+//gerw done

@@ -34,7 +34,7 @@ acquire(struct spinlock *lk)
 
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that the critical section's memory
-  // references happen after the lock is acquired.
+  // references happen after the lock is acquired. 意思是不要缓存这里吗，不要改变代码执行顺序？ cpu不要推测执行结果，内存读写不能越过这个函数
   __sync_synchronize();
 
   // Record info about lock acquisition for debugging.
@@ -67,16 +67,16 @@ release(struct spinlock *lk)
   popcli();
 }
 
-// Record the current call stack in pcs[] by following the %ebp chain.
+// Record the current call stack in pcs[] by following the %ebp chain. 目的应该是找到最后10个调用的eip，可以在kernal.sym中比较
 void
 getcallerpcs(void *v, uint pcs[])
 {
   uint *ebp;
   int i;
 
-  ebp = (uint*)v - 2;
+  ebp = (uint*)v - 2;//中间夹着一个eip
   for(i = 0; i < 10; i++){
-    if(ebp == 0 || ebp < (uint*)KERNBASE || ebp == (uint*)0xffffffff)
+    if(ebp == 0 || ebp < (uint*)KERNBASE || ebp == (uint*)0xffffffff)//如果回退到main函数之前或者回退到用户态代码
       break;
     pcs[i] = ebp[1];     // saved %eip
     ebp = (uint*)ebp[0]; // saved %ebp
@@ -116,7 +116,8 @@ popcli(void)
     panic("popcli - interruptible");
   if(--mycpu()->ncli < 0)
     panic("popcli");
-  if(mycpu()->ncli == 0 && mycpu()->intena)
+  if(mycpu()->ncli == 0 && mycpu()->intena)//如果cpu在第一个push之前就没有开启中断，那么就不要开启中断
     sti();
 }
 
+//gerw done

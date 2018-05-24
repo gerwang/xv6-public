@@ -1,4 +1,4 @@
-// Buffer cache.
+// Buffer cache. 硬盘缓冲区
 //
 // The buffer cache is a linked list of buf structures holding
 // cached copies of disk block contents.  Caching disk blocks
@@ -28,7 +28,7 @@
 
 struct {
   struct spinlock lock;
-  struct buf buf[NBUF];
+  struct buf buf[NBUF]; //最多缓冲20个硬盘块
 
   // Linked list of all buffers, through prev/next.
   // head.next is most recently used.
@@ -142,3 +142,4 @@ brelse(struct buf *b)
 //PAGEBREAK!
 // Blank page.
 
+//gerw done

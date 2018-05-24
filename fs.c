@@ -25,7 +25,7 @@
 static void itrunc(struct inode*);
 // there should be one superblock per disk device, but we run with
 // only one device
-struct superblock sb; 
+struct superblock sb;//xv6只有一个磁盘，所以只有一个磁盘块
 
 // Read the super block.
 void
@@ -84,7 +84,7 @@ bfree(int dev, uint b)
   struct buf *bp;
   int bi, m;
 
-  readsb(dev, &sb);
+  readsb(dev, &sb);//fixme 为什么这个时候要把sb从硬盘里重新读进来
   bp = bread(dev, BBLOCK(b, sb));
   bi = b % BPB;
   m = 1 << (bi % 8);
@@ -266,7 +266,7 @@ iget(uint dev, uint inum)
   ip->dev = dev;
   ip->inum = inum;
   ip->ref = 1;
-  ip->valid = 0;
+  ip->valid = 0;//还并没有从磁盘中读出来
   release(&icache.lock);
 
   return ip;
@@ -376,9 +376,9 @@ bmap(struct inode *ip, uint bn)
   uint addr, *a;
   struct buf *bp;
 
-  if(bn < NDIRECT){
+  if(bn < NDIRECT){//能够直接在这个磁盘块中找到的文件
     if((addr = ip->addrs[bn]) == 0)
-      ip->addrs[bn] = addr = balloc(ip->dev);
+      ip->addrs[bn] = addr = balloc(ip->dev);//balloc的作用是什么？为什么要这么做？ 一个文件最多能有的块数，如果没有就申请一个块
     return addr;
   }
   bn -= NDIRECT;
@@ -459,7 +459,7 @@ readi(struct inode *ip, char *dst, uint off, uint n)
   if(ip->type == T_DEV){
     if(ip->major < 0 || ip->major >= NDEV || !devsw[ip->major].read)
       return -1;
-    return devsw[ip->major].read(ip, dst, n);
+    return devsw[ip->major].read(ip, dst, n);//因为是字节流所以off总是0
   }
 
   if(off > ip->size || off + n < off)
@@ -498,7 +498,7 @@ writei(struct inode *ip, char *src, uint off, uint n)
 
   for(tot=0; tot<n; tot+=m, off+=m, src+=m){
     bp = bread(ip->dev, bmap(ip, off/BSIZE));
-    m = min(n - tot, BSIZE - off%BSIZE);
+    m = min(n - tot, BSIZE - off%BSIZE);//第一次和最后一次的特殊情况
     memmove(bp->data + off%BSIZE, src, m);
     log_write(bp);
     brelse(bp);
@@ -506,7 +506,7 @@ writei(struct inode *ip, char *src, uint off, uint n)
 
   if(n > 0 && off > ip->size){
     ip->size = off;
-    iupdate(ip);
+    iupdate(ip);//更新inode大小
   }
   return n;
 }
@@ -531,7 +531,7 @@ dirlookup(struct inode *dp, char *name, uint *poff)
   if(dp->type != T_DIR)
     panic("dirlookup not DIR");
 
-  for(off = 0; off < dp->size; off += sizeof(de)){
+  for(off = 0; off < dp->size; off += sizeof(de)){//dp.size是文件大小，不是条目数
     if(readi(dp, (char*)&de, off, sizeof(de)) != sizeof(de))
       panic("dirlookup read");
     if(de.inum == 0)
@@ -620,7 +620,7 @@ skipelem(char *path, char *name)
 
 // Look up and return the inode for a path name.
 // If parent != 0, return the inode for the parent and copy the final
-// path element into name, which must have room for DIRSIZ bytes.
+// path element into name, which must have room for DIRSIZ bytes. name指针必须事先开够保存DIRSIZ和'\0'个字符
 // Must be called inside a transaction since it calls iput().
 static struct inode*
 namex(char *path, int nameiparent, char *name)
@@ -638,7 +638,7 @@ namex(char *path, int nameiparent, char *name)
       iunlockput(ip);
       return 0;
     }
-    if(nameiparent && *path == '\0'){
+    if(nameiparent && *path == '\0'){//fixme 如果有nameiparent，那么会返回所在的目录，否则会返回entry，对吗
       // Stop one level early.
       iunlock(ip);
       return ip;
@@ -669,3 +669,4 @@ nameiparent(char *path, char *name)
 {
   return namex(path, 1, name);
 }
+//gerw看完了

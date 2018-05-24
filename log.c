@@ -97,12 +97,12 @@ read_head(void)
 
 // Write in-memory log header to disk.
 // This is the true point at which the
-// current transaction commits.
+// current transaction commits. 只有在这个时候才真正的commit
 static void
 write_head(void)
 {
   struct buf *buf = bread(log.dev, log.start);
-  struct logheader *hb = (struct logheader *) (buf->data);
+  struct logheader *hb = (struct logheader *) (buf->data);//没有把buf->data用完
   int i;
   hb->n = log.lh.n;
   for (i = 0; i < log.lh.n; i++) {
@@ -158,7 +158,7 @@ end_op(void)
     // begin_op() may be waiting for log space,
     // and decrementing log.outstanding has decreased
     // the amount of reserved space.
-    wakeup(&log);
+    wakeup(&log);//只是outstanding减少了，为什么就有空间了? 有人等在begin_op里面 那outstanding是怎么计算的呢？默认每个fscall都会使用最大值那么多的块
   }
   release(&log.lock);
 
@@ -180,7 +180,7 @@ write_log(void)
   int tail;
 
   for (tail = 0; tail < log.lh.n; tail++) {
-    struct buf *to = bread(log.dev, log.start+tail+1); // log block
+    struct buf *to = bread(log.dev, log.start+tail+1); // log block 为什么要加1 因为第0个是loghead
     struct buf *from = bread(log.dev, log.lh.block[tail]); // cache block
     memmove(to->data, from->data, BSIZE);
     bwrite(to);  // write the log
@@ -215,7 +215,7 @@ log_write(struct buf *b)
 {
   int i;
 
-  if (log.lh.n >= LOGSIZE || log.lh.n >= log.size - 1)
+  if (log.lh.n >= LOGSIZE || log.lh.n >= log.size - 1)//log.size到底在哪里定义的 param.h 在mkfs.c里面写进去
     panic("too big a transaction");
   if (log.outstanding < 1)
     panic("log_write outside of trans");
@@ -228,7 +228,8 @@ log_write(struct buf *b)
   log.lh.block[i] = b->blockno;
   if (i == log.lh.n)
     log.lh.n++;
-  b->flags |= B_DIRTY; // prevent eviction
+  b->flags |= B_DIRTY; // prevent eviction 别把我从icache里面踢出去了
   release(&log.lock);
 }
 
+//gerw done

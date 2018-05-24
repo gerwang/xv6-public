@@ -1,3 +1,5 @@
+// 磁盘缓存数据结构
+
 struct buf {
   int flags;
   uint dev;
@@ -12,3 +14,4 @@ struct buf {
 #define B_VALID 0x2  // buffer has been read from disk
 #define B_DIRTY 0x4  // buffer needs to be written to disk
 
+//gerw done

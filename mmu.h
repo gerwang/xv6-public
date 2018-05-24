@@ -39,31 +39,31 @@
 
 #define CR4_PSE         0x00000010      // Page size extension
 
-// various segment selectors.
+// various segment selectors. 0 应该是NULLSEG，在bootasm里面
 #define SEG_KCODE 1  // kernel code
 #define SEG_KDATA 2  // kernel data+stack
 #define SEG_UCODE 3  // user code
 #define SEG_UDATA 4  // user data+stack
 #define SEG_TSS   5  // this process's task state
 
-// cpu->gdt[NSEGS] holds the above segments.
+// cpu->gdt[NSEGS] holds the above segments. 段表在这里
 #define NSEGS     6
 
-#ifndef __ASSEMBLER__
+#ifndef __ASSEMBLER__//fixme 这个宏在哪里定义的？
 // Segment Descriptor
-struct segdesc {
+struct segdesc {//一个有64位
   uint lim_15_0 : 16;  // Low bits of segment limit
   uint base_15_0 : 16; // Low bits of segment base address
   uint base_23_16 : 8; // Middle bits of segment base address
   uint type : 4;       // Segment type (see STS_ constants)
   uint s : 1;          // 0 = system, 1 = application
-  uint dpl : 2;        // Descriptor Privilege Level
+  uint dpl : 2;        // Descriptor Privilege Level 在boot中这个值为0
   uint p : 1;          // Present
   uint lim_19_16 : 4;  // High bits of segment limit
   uint avl : 1;        // Unused (available for software use)
   uint rsv1 : 1;       // Reserved
-  uint db : 1;         // 0 = 16-bit segment, 1 = 32-bit segment
-  uint g : 1;          // Granularity: limit scaled by 4K when set
+  uint db : 1;         // 0 = 16-bit segment, 1 = 32-bit segment 就是它使得cpu跳转成32位模式的吗？ 我想，是的
+  uint g : 1;          // Granularity: limit scaled by 4K when set fixme 不懂这个参数的意思
   uint base_31_24 : 8; // High bits of segment base address
 };
 
@@ -111,10 +111,10 @@ struct segdesc {
 //  \--- PDX(va) --/ \--- PTX(va) --/
 
 // page directory index
-#define PDX(va)         (((uint)(va) >> PDXSHIFT) & 0x3FF)
+#define PDX(va)         (((uint)(va) >> PDXSHIFT) & 0x3FF) //取高10位作为一级页表编号
 
 // page table index
-#define PTX(va)         (((uint)(va) >> PTXSHIFT) & 0x3FF)
+#define PTX(va)         (((uint)(va) >> PTXSHIFT) & 0x3FF) // 12~22位页面号
 
 // construct virtual address from indexes and offset
 #define PGADDR(d, t, o) ((uint)((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
@@ -143,8 +143,8 @@ struct segdesc {
 #define PTE_MBZ         0x180   // Bits must be zero
 
 // Address in page table or page directory entry
-#define PTE_ADDR(pte)   ((uint)(pte) & ~0xFFF)
-#define PTE_FLAGS(pte)  ((uint)(pte) &  0xFFF)
+#define PTE_ADDR(pte)   ((uint)(pte) & ~0xFFF)//取出高20位地址
+#define PTE_FLAGS(pte)  ((uint)(pte) &  0xFFF)//低12位状态
 
 #ifndef __ASSEMBLER__
 typedef uint pte_t;
@@ -197,7 +197,7 @@ struct gatedesc {
   uint cs : 16;         // code segment selector
   uint args : 5;        // # args, 0 for interrupt/trap gates
   uint rsv1 : 3;        // reserved(should be zero I guess)
-  uint type : 4;        // type(STS_{TG,IG32,TG32})
+  uint type : 4;        // type(STS_{TG,IG32,TG32}) trap gate interrupt gate trap gate 32
   uint s : 1;           // must be 0 (system)
   uint dpl : 2;         // descriptor(meaning new) privilege level
   uint p : 1;           // Present
@@ -226,3 +226,5 @@ struct gatedesc {
 }
 
 #endif
+
+//gerw done

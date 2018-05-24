@@ -26,7 +26,7 @@ argfd(int n, int *pfd, struct file **pf)
 
   if(argint(n, &fd) < 0)
     return -1;
-  if(fd < 0 || fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)
+  if(fd < 0 || fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)//这里说明fd是进程独立的
     return -1;
   if(pfd)
     *pfd = fd;
@@ -73,7 +73,7 @@ sys_read(void)
   int n;
   char *p;
 
-  if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)
+  if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)//传字符串的时候会提供长度作为参数
     return -1;
   return fileread(f, p, n);
 }
@@ -109,7 +109,7 @@ sys_fstat(void)
   struct file *f;
   struct stat *st;
 
-  if(argfd(0, 0, &f) < 0 || argptr(1, (void*)&st, sizeof(*st)) < 0)
+  if(argfd(0, 0, &f) < 0 || argptr(1, (void*)&st, sizeof(*st)) < 0)//原来argptr是可以不是长度为4个字节的
     return -1;
   return filestat(f, st);
 }
@@ -141,7 +141,7 @@ sys_link(void)
   iupdate(ip);
   iunlock(ip);
 
-  if((dp = nameiparent(new, name)) == 0)
+  if((dp = nameiparent(new, name)) == 0)//找到所在的上级目录
     goto bad;
   ilock(dp);
   if(dp->dev != ip->dev || dirlink(dp, name, ip->inum) < 0){
@@ -201,7 +201,7 @@ sys_unlink(void)
   ilock(dp);
 
   // Cannot unlink "." or "..".
-  if(namecmp(name, ".") == 0 || namecmp(name, "..") == 0)
+  if(namecmp(name, ".") == 0 || namecmp(name, "..") == 0)//难道dirlookup能找到这些inode？没错，这是两个项
     goto bad;
 
   if((ip = dirlookup(dp, name, &off)) == 0)
@@ -252,7 +252,7 @@ create(char *path, short type, short major, short minor)
   if((ip = dirlookup(dp, name, &off)) != 0){
     iunlockput(dp);
     ilock(ip);
-    if(type == T_FILE && ip->type == T_FILE)
+    if(type == T_FILE && ip->type == T_FILE)//文件已经存在
       return ip;
     iunlockput(ip);
     return 0;
@@ -270,7 +270,7 @@ create(char *path, short type, short major, short minor)
   if(type == T_DIR){  // Create . and .. entries.
     dp->nlink++;  // for ".."
     iupdate(dp);
-    // No ip->nlink++ for ".": avoid cyclic ref count.
+    // No ip->nlink++ for ".": avoid cyclic ref count. 这也是为什么dirlink自己不增加nlink
     if(dirlink(ip, ".", ip->inum) < 0 || dirlink(ip, "..", dp->inum) < 0)
       panic("create dots");
   }
@@ -308,14 +308,14 @@ sys_open(void)
       return -1;
     }
     ilock(ip);
-    if(ip->type == T_DIR && omode != O_RDONLY){
+    if(ip->type == T_DIR && omode != O_RDONLY){//只要是dir就是只读的
       iunlockput(ip);
       end_op();
       return -1;
     }
   }
 
-  if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
+  if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){//filealloc 全局打开文件表
     if(f)
       fileclose(f);
     iunlockput(ip);
@@ -390,7 +390,7 @@ sys_chdir(void)
   iunlock(ip);
   iput(curproc->cwd);
   end_op();
-  curproc->cwd = ip;
+  curproc->cwd = ip;//没有iput(ip)所以引用计数增加了
   return 0;
 }
 
@@ -443,3 +443,4 @@ sys_pipe(void)
   fd[1] = fd1;
   return 0;
 }
+//gerw done

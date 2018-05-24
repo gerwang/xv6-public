@@ -18,7 +18,7 @@ fmtname(char *path)
   if(strlen(p) >= DIRSIZ)
     return p;
   memmove(buf, p, strlen(p));
-  memset(buf+strlen(p), ' ', DIRSIZ-strlen(p));
+  memset(buf+strlen(p), ' ', DIRSIZ-strlen(p));//不足部分用空格补齐
   return buf;
 }
 
@@ -83,3 +83,4 @@ main(int argc, char *argv[])
     ls(argv[i]);
   exit();
 }
+//gerw done

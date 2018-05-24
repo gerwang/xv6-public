@@ -8,7 +8,7 @@
 #include "sleeplock.h"
 #include "file.h"
 
-#define PIPESIZE 512
+#define PIPESIZE 512 //缓冲区的大小
 
 struct pipe {
   struct spinlock lock;
@@ -22,13 +22,13 @@ struct pipe {
 int
 pipealloc(struct file **f0, struct file **f1)
 {
-  struct pipe *p;
+  struct pipe *p;//一个pipe两个file
 
   p = 0;
   *f0 = *f1 = 0;
   if((*f0 = filealloc()) == 0 || (*f1 = filealloc()) == 0)
     goto bad;
-  if((p = (struct pipe*)kalloc()) == 0)
+  if((p = (struct pipe*)kalloc()) == 0)//一个pipe占4KB
     goto bad;
   p->readopen = 1;
   p->writeopen = 1;
@@ -62,7 +62,7 @@ pipeclose(struct pipe *p, int writable)
   acquire(&p->lock);
   if(writable){
     p->writeopen = 0;
-    wakeup(&p->nread);
+    wakeup(&p->nread);//唤醒读者：没人写了，你没救了
   } else {
     p->readopen = 0;
     wakeup(&p->nwrite);
@@ -119,3 +119,4 @@ piperead(struct pipe *p, char *addr, int n)
   release(&p->lock);
   return i;
 }
+//gerw done

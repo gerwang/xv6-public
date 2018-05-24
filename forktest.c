@@ -1,4 +1,4 @@
-// Test that fork fails gracefully.
+// Test that fork fails gracefully. 优雅的失败
 // Tiny executable so that the limit can be filling the proc table.
 
 #include "types.h"
@@ -29,7 +29,7 @@ forktest(void)
   }
 
   if(n == N){
-    printf(1, "fork claimed to work N times!\n", N);
+    printf(1, "fork claimed to work N times!\n", N);//这是不正常的
     exit();
   }
 
@@ -54,3 +54,5 @@ main(void)
   forktest();
   exit();
 }
+
+//gerw done

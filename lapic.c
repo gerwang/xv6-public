@@ -1,4 +1,4 @@
-// The local APIC manages internal (non-I/O) interrupts.
+// The local APIC manages internal (non-I/O) interrupts. 高级中断控制器
 // See Chapter 8 & Appendix C of Intel processor manual volume 3.
 
 #include "param.h"
@@ -64,9 +64,9 @@ lapicinit(void)
   // from lapic[TICR] and then issues an interrupt.
   // If xv6 cared more about precise timekeeping,
   // TICR would be calibrated using an external time source.
-  lapicw(TDCR, X1);
+  lapicw(TDCR, X1);//将计数除上1
   lapicw(TIMER, PERIODIC | (T_IRQ0 + IRQ_TIMER));
-  lapicw(TICR, 10000000);
+  lapicw(TICR, 10000000);//fixme 这里是指每10ms发个中断吗 单位应该是纳秒
 
   // Disable logical interrupt lines.
   lapicw(LINT0, MASKED);
@@ -93,7 +93,7 @@ lapicinit(void)
   while(lapic[ICRLO] & DELIVS)
     ;
 
-  // Enable interrupts on the APIC (but not on the processor).
+  // Enable interrupts on the APIC (but not on the processor). fixme 所以说从这里开始每个cpu对应的apic已经开始接受中断，但cpu仍然有FL_IF位
   lapicw(TPR, 0);
 }
 
@@ -107,7 +107,7 @@ lapicid(void)
 
 // Acknowledge interrupt.
 void
-lapiceoi(void)
+lapiceoi(void) //将某位寄存器清零 end of interrupt
 {
   if(lapic)
     lapicw(EOI, 0);
@@ -124,7 +124,7 @@ microdelay(int us)
 #define CMOS_RETURN  0x71
 
 // Start additional processor running entry code at addr.
-// See Appendix B of MultiProcessor Specification.
+// See Appendix B of MultiProcessor Specification. 并没有这一章
 void
 lapicstartap(uchar apicid, uint addr)
 {
@@ -143,7 +143,7 @@ lapicstartap(uchar apicid, uint addr)
   // "Universal startup algorithm."
   // Send INIT (level-triggered) interrupt to reset other CPU.
   lapicw(ICRHI, apicid<<24);
-  lapicw(ICRLO, INIT | LEVEL | ASSERT);
+  lapicw(ICRLO, INIT | LEVEL | ASSERT);//fixme cpu之间是通过assert和deassert同步的吗
   microdelay(200);
   lapicw(ICRLO, INIT | LEVEL);
   microdelay(100);    // should be 10ms, but too slow in Bochs!
@@ -174,7 +174,7 @@ lapicstartap(uchar apicid, uint addr)
 static uint cmos_read(uint reg)
 {
   outb(CMOS_PORT,  reg);
-  microdelay(200);
+  microdelay(200);//本意是等待200微秒
 
   return inb(CMOS_RETURN);
 }
@@ -224,3 +224,5 @@ void cmostime(struct rtcdate *r)
   *r = t1;
   r->year += 2000;
 }
+
+//gerw done

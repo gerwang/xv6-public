@@ -28,7 +28,7 @@ pass curproc explicitly, or implicit from cpu #?
   e.g. argument to newproc()?
   hmm, you need a global curproc[cpu] for trap() &c
 
-no stack expansion
+no stack expansion 栈不可扩展！
 
 test running out of memory, process slots
 
@@ -61,7 +61,7 @@ some sleep()s should be interruptible by kill()
 
 locks
   init_lock
-    sequences CPU startup
+    sequences CPU startup 串行化的啓動cpu
   proc_table_lock
     also protects next_pid
   per-fd lock *just* protects count read-modify-write
@@ -92,7 +92,7 @@ inode->count counts in-memory pointers to the struct
   prevents inode[] element from being re-used
   protected by inode_table_lock
 
-blocks and inodes have ad-hoc sleep-locks
+blocks and inodes have ad-hoc sleep-locks 特设的睡眠锁
   provide a single mechanism?
 
 kalloc() can return 0; do callers handle this right?
@@ -104,7 +104,7 @@ test: dup() shared fd->off
 test: does echo foo > x truncate x?
 
 sh: ioredirection incorrect now we have pipes
-sh: chain of pipes won't work, also ugly that parent closes fdarray entries too
+sh: chain of pipes won't work, also ugly that parent closes fdarray entries too 多个管道不能work,似乎现在可以了吧
 sh: dynamic memory allocation?
 sh: should sh support ; () &
 sh: stop stdin on ctrl-d (for cat > y)
@@ -121,3 +121,5 @@ echo foo > bar should truncate bar
 make it work on a real machine
 release before acquire at end of sleep?
 check 2nd disk (i.e. if not in .bochsrc)
+
+# gerw done

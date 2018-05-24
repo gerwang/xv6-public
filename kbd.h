@@ -70,7 +70,7 @@ static uchar normalmap[256] =
   [0xD2] KEY_INS,   [0xD3] KEY_DEL
 };
 
-static uchar shiftmap[256] =
+static uchar shiftmap[256] =//按住shift
 {
   NO,   033,  '!',  '@',  '#',  '$',  '%',  '^',  // 0x00
   '&',  '*',  '(',  ')',  '_',  '+',  '\b', '\t',
@@ -110,3 +110,4 @@ static uchar ctlmap[256] =
   [0xD2] KEY_INS,   [0xD3] KEY_DEL
 };
 
+//gerw done

@@ -27,7 +27,7 @@
 #define T_SYSCALL       64      // system call
 #define T_DEFAULT      500      // catchall
 
-#define T_IRQ0          32      // IRQ 0 corresponds to int T_IRQ
+#define T_IRQ0          32      // IRQ 0 corresponds to int T_IRQ 一种映射方法，低位是留给软件异常的
 
 #define IRQ_TIMER        0
 #define IRQ_KBD          1
@@ -36,3 +36,4 @@
 #define IRQ_ERROR       19
 #define IRQ_SPURIOUS    31
 
+//gerw done

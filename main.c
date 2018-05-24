@@ -17,8 +17,8 @@ extern char end[]; // first address after kernel loaded from ELF file
 int
 main(void)
 {
-  kinit1(end, P2V(4*1024*1024)); // phys page allocator
-  kvmalloc();      // kernel page table
+  kinit1(end, P2V(4*1024*1024)); // phys page allocator 回收4MB entrypgdir的内存 fixme jmp的时候有压栈吗？entrypgdir里面的东西都不要了吗？
+  kvmalloc();      // kernel page table 从此以后使用kpgdir而不是entrypgdir了
   mpinit();        // detect other processors
   lapicinit();     // interrupt controller
   seginit();       // segment descriptors
@@ -27,8 +27,8 @@ main(void)
   consoleinit();   // console hardware
   uartinit();      // serial port
   pinit();         // process table
-  tvinit();        // trap vectors
-  binit();         // buffer cache
+  tvinit();        // trap vectors 在mpmain里面把中断向量放到寄存器里面
+  binit();         // buffer cache 磁盘缓存
   fileinit();      // file table
   ideinit();       // disk 
   startothers();   // start other processors
@@ -52,7 +52,7 @@ static void
 mpmain(void)
 {
   cprintf("cpu%d: starting %d\n", cpuid(), cpuid());
-  idtinit();       // load idt register
+  idtinit();       // load idt register interrupt descriptor table
   xchg(&(mycpu()->started), 1); // tell startothers() we're up
   scheduler();     // start running processes
 }
@@ -82,14 +82,14 @@ startothers(void)
     // pgdir to use. We cannot use kpgdir yet, because the AP processor
     // is running in low  memory, so we use entrypgdir for the APs too.
     stack = kalloc();
-    *(void**)(code-4) = stack + KSTACKSIZE;
-    *(void**)(code-8) = mpenter;
+    *(void**)(code-4) = stack + KSTACKSIZE;//esp
+    *(void**)(code-8) = mpenter;//ret
     *(int**)(code-12) = (void *) V2P(entrypgdir);
 
     lapicstartap(c->apicid, V2P(code));
 
     // wait for cpu to finish mpmain()
-    while(c->started == 0)
+    while(c->started == 0) //挨个挨个来
       ;
   }
 }
@@ -100,7 +100,7 @@ startothers(void)
 // PTE_PS in a page directory entry enables 4Mbyte pages.
 
 __attribute__((__aligned__(PGSIZE)))
-pde_t entrypgdir[NPDENTRIES] = {
+pde_t entrypgdir[NPDENTRIES] = {//應該是使用虚拟地址前后会被映射到相同的地方
   // Map VA's [0, 4MB) to PA's [0, 4MB)
   [0] = (0) | PTE_P | PTE_W | PTE_PS,
   // Map VA's [KERNBASE, KERNBASE+4MB) to PA's [0, 4MB)
@@ -114,3 +114,4 @@ pde_t entrypgdir[NPDENTRIES] = {
 //PAGEBREAK!
 // Blank page.
 
+//gerw done

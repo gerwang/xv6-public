@@ -2,7 +2,7 @@
 // Both the kernel and user programs use this header file.
 
 
-#define ROOTINO 1  // root i-number
+#define ROOTINO 1  // root i-number 根目录的inode number
 #define BSIZE 512  // block size
 
 // Disk layout:
@@ -26,13 +26,13 @@ struct superblock {
 #define MAXFILE (NDIRECT + NINDIRECT)
 
 // On-disk inode structure
-struct dinode {
+struct dinode {//16bytes
   short type;           // File type
-  short major;          // Major device number (T_DEV only)
-  short minor;          // Minor device number (T_DEV only)
-  short nlink;          // Number of links to inode in file system
+  short major;          // Major device number (T_DEV only) 这是干什么的 使用的驱动类型
+  short minor;          // Minor device number (T_DEV only) 具体的设备
+  short nlink;          // Number of links to inode in file system 引用计数
   uint size;            // Size of file (bytes)
-  uint addrs[NDIRECT+1];   // Data block addresses
+  uint addrs[NDIRECT+1];   // Data block addresses 为什么要多开一个 因为最后一个指向INDIRECT的块
 };
 
 // Inodes per block.
@@ -47,11 +47,11 @@ struct dinode {
 // Block of free map containing bit for block b
 #define BBLOCK(b, sb) (b/BPB + sb.bmapstart)
 
-// Directory is a file containing a sequence of dirent structures.
+// Directory is a file containing a sequence of dirent structures.是文件名的长度
 #define DIRSIZ 14
 
-struct dirent {
+struct dirent {//16bytes fixme 所以说，每个inode都有一个entry存在硬盘里？除了root？
   ushort inum;
   char name[DIRSIZ];
 };
-
+//gerw 看完了

@@ -56,7 +56,7 @@ uartputc(int c)
   if(!uart)
     return;
   for(i = 0; i < 128 && !(inb(COM1+5) & 0x20); i++)
-    microdelay(10);
+    microdelay(10);//本意是想等待1280ms？
   outb(COM1+0, c);
 }
 
@@ -75,3 +75,5 @@ uartintr(void)
 {
   consoleintr(uartgetc);
 }
+
+//gerw done fixme 对uart的应用和概念都不是很清楚

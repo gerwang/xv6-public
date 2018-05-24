@@ -12,6 +12,8 @@ main(int argc, char **argv)
     exit();
   }
   for(i=1; i<argc; i++)
-    kill(atoi(argv[i]));
+    kill(atoi(argv[i]));//其实被kill的进程只会在trap或者wakeup的时候才真正的停止运行
   exit();
 }
+
+//gerw done

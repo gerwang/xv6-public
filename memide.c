@@ -58,3 +58,4 @@ iderw(struct buf *b)
     memmove(b->data, p, BSIZE);
   b->flags |= B_VALID;
 }
+//gerw done

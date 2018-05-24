@@ -36,7 +36,7 @@ static pte_t *
 walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
   pde_t *pde;
-  pte_t *pgtab;
+  pte_t *pgtab;// 二级页表的指针
 
   pde = &pgdir[PDX(va)];
   if(*pde & PTE_P){
@@ -49,9 +49,9 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
     // The permissions here are overly generous, but they can
     // be further restricted by the permissions in the page table
     // entries, if necessary.
-    *pde = V2P(pgtab) | PTE_P | PTE_W | PTE_U;
+    *pde = V2P(pgtab) | PTE_P | PTE_W | PTE_U;//有了，能写，用户态
   }
-  return &pgtab[PTX(va)];
+  return &pgtab[PTX(va)];//当我们使用中括号下标的时候，已经通过了一次段表吗 而且还过了一次页表
 }
 
 // Create PTEs for virtual addresses starting at va that refer to
@@ -101,7 +101,7 @@ mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 // (directly addressable from end..P2V(PHYSTOP)).
 
 // This table defines the kernel's mappings, which are present in
-// every process's page table.
+// every process's page table. 每个进程的页表的必有项
 static struct kmap {
   void *virt;
   uint phys_start;
@@ -109,12 +109,12 @@ static struct kmap {
   int perm;
 } kmap[] = {
  { (void*)KERNBASE, 0,             EXTMEM,    PTE_W}, // I/O space
- { (void*)KERNLINK, V2P(KERNLINK), V2P(data), 0},     // kern text+rodata
+ { (void*)KERNLINK, V2P(KERNLINK), V2P(data), 0},     // kern text+rodata 都是内核态的，这条不能写
  { (void*)data,     V2P(data),     PHYSTOP,   PTE_W}, // kern data+memory
- { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // more devices
+ { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, // more devices 这里0应该代表正无穷
 };
 
-// Set up kernel part of a page table.
+// Set up kernel part of a page table. 对于每一个进程都要这么做一次
 pde_t*
 setupkvm(void)
 {
@@ -136,7 +136,7 @@ setupkvm(void)
 }
 
 // Allocate one page table for the machine for the kernel address
-// space for scheduler processes.
+// space for scheduler processes. 专门给调度器提供的页表 fixme xv6没有全局页面表吗
 void
 kvmalloc(void)
 {
@@ -144,7 +144,7 @@ kvmalloc(void)
   switchkvm();
 }
 
-// Switch h/w page table register to the kernel-only page table,
+// Switch h/w page table register to the kernel-only page table, 只有内核内存的页表
 // for when no process is running.
 void
 switchkvm(void)
@@ -164,15 +164,15 @@ switchuvm(struct proc *p)
     panic("switchuvm: no pgdir");
 
   pushcli();
-  mycpu()->gdt[SEG_TSS] = SEG16(STS_T32A, &mycpu()->ts,
+  mycpu()->gdt[SEG_TSS] = SEG16(STS_T32A, &mycpu()->ts,//task state segment
                                 sizeof(mycpu()->ts)-1, 0);
   mycpu()->gdt[SEG_TSS].s = 0;
-  mycpu()->ts.ss0 = SEG_KDATA << 3;
+  mycpu()->ts.ss0 = SEG_KDATA << 3;//fixme 这个地方是进入内核态的时候的段吗
   mycpu()->ts.esp0 = (uint)p->kstack + KSTACKSIZE;
   // setting IOPL=0 in eflags *and* iomb beyond the tss segment limit
   // forbids I/O instructions (e.g., inb and outb) from user space
   mycpu()->ts.iomb = (ushort) 0xFFFF;
-  ltr(SEG_TSS << 3);
+  ltr(SEG_TSS << 3);//fixme
   lcr3(V2P(p->pgdir));  // switch to process's address space
   popcli();
 }
@@ -265,7 +265,7 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   for(; a  < oldsz; a += PGSIZE){
     pte = walkpgdir(pgdir, (char*)a, 0);
     if(!pte)
-      a = PGADDR(PDX(a) + 1, 0, 0) - PGSIZE;
+      a = PGADDR(PDX(a) + 1, 0, 0) - PGSIZE;//这个二级页表里面的已经全部释放完了
     else if((*pte & PTE_P) != 0){
       pa = PTE_ADDR(*pte);
       if(pa == 0)
@@ -369,7 +369,7 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
   buf = (char*)p;
   while(len > 0){
     va0 = (uint)PGROUNDDOWN(va);
-    pa0 = uva2ka(pgdir, (char*)va0);
+    pa0 = uva2ka(pgdir, (char*)va0);//这里的va0应该必须是aligned
     if(pa0 == 0)
       return -1;
     n = PGSIZE - (va - va0);
@@ -390,3 +390,4 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 //PAGEBREAK!
 // Blank page.
 
+//gerw done

@@ -18,18 +18,18 @@ void
 bootmain(void)
 {
   struct elfhdr *elf;
-  struct proghdr *ph, *eph;
+  struct proghdr *ph, *eph;//每个proghdr的开始和结尾
   void (*entry)(void);
   uchar* pa;
 
   elf = (struct elfhdr*)0x10000;  // scratch space
 
   // Read 1st page off disk
-  readseg((uchar*)elf, 4096, 0);
+  readseg((uchar*)elf, 4096, 0);//只是想读两种header，4096肯定够
 
   // Is this an ELF executable?
   if(elf->magic != ELF_MAGIC)
-    return;  // let bootasm.S handle error
+    return;  // let bootasm.S handle error 其实就会死机
 
   // Load each program segment (ignores ph flags).
   ph = (struct proghdr*)((uchar*)elf + elf->phoff);
@@ -43,15 +43,15 @@ bootmain(void)
 
   // Call the entry point from the ELF header.
   // Does not return!
-  entry = (void(*)(void))(elf->entry);
-  entry();
+  entry = (void(*)(void))(elf->entry);// 据说这里应该还是0x7c00？不是，是0x100000，在Makefile里写的，刚好在为设备保留的地址空间上面
+  entry();//应该是main.c里的main函数
 }
 
 void
 waitdisk(void)
 {
   // Wait for disk ready.
-  while((inb(0x1F7) & 0xC0) != 0x40)
+  while((inb(0x1F7) & 0xC0) != 0x40)//这个时候是单线程的，根本不需要上锁
     ;
 }
 
@@ -65,7 +65,7 @@ readsect(void *dst, uint offset)
   outb(0x1F3, offset);
   outb(0x1F4, offset >> 8);
   outb(0x1F5, offset >> 16);
-  outb(0x1F6, (offset >> 24) | 0xE0);
+  outb(0x1F6, (offset >> 24) | 0xE0);//为什么这里要或上0xE0？ 为了告诉硬盘我们提供了一个线性块地址
   outb(0x1F7, 0x20);  // cmd 0x20 - read sectors
 
   // Read data.
@@ -94,3 +94,4 @@ readseg(uchar* pa, uint count, uint offset)
   for(; pa < epa; pa += SECTSIZE, offset++)
     readsect(pa, offset);
 }
+//gerw done
