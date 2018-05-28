@@ -5,9 +5,8 @@
 // #include "fcntl.h"
 // #include "stat.h"
 // #include "fs.h"
-//此处暂时这么处理！！！
+//此处暂时这么处理！！！尚未解决的问题：如何调用另外一个文件中定义的函数，目前只能把那个文件include进来
 #include "lexical_analysis.h"
-#include "lexical_analysis.c"
 #include "vim.h"
 #include "color.h"
 
@@ -18,13 +17,13 @@ initColorConfiguration()//初始化颜色配置
     BACKGROUND_COLOR = BLACK;//背景色
     RESERVERED_WORD_COLOR = BLUE;//保留字的颜色
     PARAMETER_COLOR = DARKGREEN;//常量的颜色
-    VARIABLE_COLOR = WHITE;//变量的颜色
+    VARIABLE_COLOR = PINK;//变量的颜色
     OPERATOR_COLOR = WHITE;//运算符的颜色
     EMPHASIZE_WORD_COLOR = RED;//强调字体的颜色
 
     CONTROL_LINE_COLOR = YELLOW;//控制栏的颜色
     CURRENT_POSITION_COLOR = DARKPINK;//当前光标位置的颜色
-    CURRENT_LINE_COLOR = DARKGREEN;//当前行的颜色
+    CURRENT_LINE_COLOR = DARKGRAY;//当前行的颜色
 }
 
 int 
@@ -99,6 +98,7 @@ openFile(char* filename)//打开文件
 int
 saveFile(char* filename)//保存文件
 {
+    unlink(filename);
     int fd = open(filename, O_WRONLY | O_CREATE | O_OVER);
     if (fd < 0)
         return fd;
@@ -109,6 +109,7 @@ saveFile(char* filename)//保存文件
         write(fd, "\n", 1);
     }
     close(fd);
+    saved = 1;
     return 0;
 }
 
@@ -212,13 +213,6 @@ void showTextRange(int up, int down){//更新[up,down)行的内容
                 setconsole(coor(i,j), 0, combineColor(BLACK, CURRENT_LINE_COLOR), -1, 2);
     for (i = startline + up; i < startline + down; ++i){
         l = strlen(textbuf[i]);
-        // for (j = 0; j < l; ++j)
-        //     if( (i-startline) != cursorX)//如果不是焦点行
-        //         setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, BACKGROUND_COLOR), -1, 2);
-        //     else if( (j-left) != cursorY)//如果是焦点行
-        //         setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, CURRENT_LINE_COLOR), -1, 2);
-        //     else//如果是焦点位置
-        //         setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, CURRENT_POSITION_COLOR), -1, 2);
         updateCharColorByLine(i);//更新文档第i行各个位置的字符颜色
         int backgroundColor = BACKGROUND_COLOR;
         if((i-startline) == cursorX) backgroundColor = CURRENT_LINE_COLOR;//如果是焦点行 

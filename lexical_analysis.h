@@ -1,3 +1,6 @@
+#ifndef LEXICAL_ANALYSIS_H
+#define LEXICAL_ANALYSIS_H
+
 //词法分析程序头文件
 //修改者：江俊广
 //参考来源：https://www.cnblogs.com/zyrblog/p/6885922.html
@@ -62,29 +65,6 @@ volatile    while
 <标识符100 ，标识符指针>
 */
 
-
-/****************************************************************************************/
-//全局变量，保留字表
-static char reserveWord[32][20] = {
-    "auto", "break", "case", "char", "const", "continue",
-    "default", "do", "double", "else", "enum", "extern",
-    "float", "for", "goto", "if", "int", "long",
-    "register", "return", "short", "signed", "sizeof", "static",
-    "struct", "switch", "typedef", "union", "unsigned", "void",
-    "volatile", "while"
-};
-//界符运算符表
-static char operatorOrDelimiter[36][10] = {
-    "+", "-", "*", "/", "<", "<=", ">", ">=", "=", "==",
-    "!=", ";", "(", ")", "^", ",", "\"", "\'", "#", "&",
-    "&&", "|", "||", "%", "~", "<<", ">>", "[", "]", "{",
-    "}", "\\", ".", "\?", ":", "!"
-};
-
-// static  char IDentifierTbl[1000][50] = { "" };//标识符表
-/****************************************************************************************/
-
-
 //分词函数对外提供的接口
 
 //词法分析子程序
@@ -98,3 +78,7 @@ void Scanner(int* synptr, char s[], char token[], int*pptr);
 #define isIDentifier(syn) (syn == 100) //判断是否为标识符
 #define isParameter(syn) (syn == 99) //判断是否为常数
 #define isOperatorOrDelimiter(syn) (syn>=33 && syn<=68)//判断是否为运算符或者定界符
+
+#include "lexical_analysis.c"
+
+#endif
