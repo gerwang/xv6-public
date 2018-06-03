@@ -2,6 +2,17 @@
 #include "stat.h"
 #include "user.h"
 
+void runTaskMgr();
+void getCommand();
+void printTaskMgrInfo();
+void printString();
+void printPageInfo();
+
+void runTaskMgr()
+{
+
+}
+
 void getCommand()
 {
 
@@ -10,10 +21,6 @@ void getCommand()
 void printTaskMgrInfo()
 {
 
-  while(1)
-  {
-    getCommand();
-  }
 }
 
 void printString()
@@ -28,6 +35,6 @@ void printPageInfo()
 
 int main()
 {
-  printMgrInfo();
+  runTaskMgr();
   return 0;
 }
