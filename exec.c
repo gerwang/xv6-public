@@ -38,6 +38,15 @@ exec(char *path, char **argv)
   if((pgdir = setupkvm()) == 0)
     goto bad;
 
+  // Save data for swapping, restore them later.
+  // Normalily we can just clear them, but if exec failed,
+  // we need to be able to restore.
+
+  memstab_clear(curproc);
+  swapstab_clear(curproc);
+  
+  //todo Need a mechanism to save the swap table and restore it if exec fails.
+  
   // Load program into memory.
   sz = PGSIZE;
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
@@ -103,6 +112,11 @@ exec(char *path, char **argv)
   curproc->sz = sz;
   curproc->tf->eip = elf.entry;  // main
   curproc->tf->esp = sp;
+
+  // Refresh swapfile.
+  swapdealloc(curproc);
+  swapalloc(curproc);
+
   switchuvm(curproc);
   freevm(oldpgdir);
   return 0;
@@ -114,5 +128,11 @@ exec(char *path, char **argv)
     iunlockput(ip);
     end_op();
   }
+
+  // Save data for swapping, restore them later.
+  // Normalily we can just clear them, but if exec failed,
+  // we need to be able to restore.
+  //todo Need a mechanism to save the swap table and restore it if exec fails.
+
   return -1;
 }
