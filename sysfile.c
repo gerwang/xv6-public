@@ -37,7 +37,7 @@ sys_setconsole(void)
         cursor = -1;
     if (argint(4, &mode) < 0)
         mode = 0;
-    if (pos >= 0){
+    if (0 <= pos && pos < 80 * 25){//屏幕输出范围在[0~80 x 25)
         crt[pos] = (ch & 0xff) | color;
     }
     if (cursor >= 0){

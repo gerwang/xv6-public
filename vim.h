@@ -48,3 +48,6 @@ int CONTROL_LINE_COLOR;//控制栏的颜色
 int CURRENT_POSITION_COLOR;//当前光标位置的颜色
 int CURRENT_LINE_COLOR;//当前行的颜色
 int EMPHASIZE_WORD_COLOR;//强调字的颜色
+int OPERATOR_COLOR;//运算符的颜色
+
+int charColor[80];//标记某一行各个位置的单词的颜色

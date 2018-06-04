@@ -1,26 +1,29 @@
 //vim.c文件的修改者：江俊广
 
-#include "types.h"
-#include "user.h"
-#include "fcntl.h"
-#include "stat.h"
-#include "fs.h"
+// #include "types.h"
+// #include "user.h"
+// #include "fcntl.h"
+// #include "stat.h"
+// #include "fs.h"
+//此处暂时这么处理！！！尚未解决的问题：如何调用另外一个文件中定义的函数，目前只能把那个文件include进来
+#include "lexical_analysis.h"
 #include "vim.h"
 #include "color.h"
 
 void 
 initColorConfiguration()//初始化颜色配置
 {
-    //首先尝试从配置文件中读入颜色设置
+    //首先尝试从配置文件中读入颜色设置(该功能尚未实现)
     BACKGROUND_COLOR = BLACK;//背景色
     RESERVERED_WORD_COLOR = BLUE;//保留字的颜色
     PARAMETER_COLOR = DARKGREEN;//常量的颜色
-    VARIABLE_COLOR = WHITE;//变量的颜色
+    VARIABLE_COLOR = PINK;//变量的颜色
+    OPERATOR_COLOR = WHITE;//运算符的颜色
     EMPHASIZE_WORD_COLOR = RED;//强调字体的颜色
 
     CONTROL_LINE_COLOR = YELLOW;//控制栏的颜色
     CURRENT_POSITION_COLOR = DARKPINK;//当前光标位置的颜色
-    CURRENT_LINE_COLOR = GREEN;//当前行的颜色
+    CURRENT_LINE_COLOR = DARKGRAY;//当前行的颜色
 }
 
 int 
@@ -55,13 +58,8 @@ init()//将显示区刷新为空白内容
     int i, j;
     for (i = 0; i < CONSOLE_HEIGHT; ++i)
         for (j = 0; j < CONSOLE_WIDTH; ++j)
-            setconsole(coor(i, j), 0, WHITE_ON_BLACK, -1, 2);//setconsole整个函数的实现在哪里？？？
+            setconsole(coor(i, j), 0, WHITE_ON_BLACK, -1, 2);
     setconsole(-1, 0, 0, coor(cursorX, cursorY), 2);
-}
-
-void //在屏幕坐标（i，j）的位置放一个字符c，字体颜色为fontColor,背景颜色为backgroundColor
-printChar(int i, int j, char c, int fontColor, int backgroundColor){
-    setconsole(coor(i, j), c, combineColor(fontColor, backgroundColor), -1, 2);
 }
 
 void
@@ -100,6 +98,7 @@ openFile(char* filename)//打开文件
 int
 saveFile(char* filename)//保存文件
 {
+    unlink(filename);
     int fd = open(filename, O_WRONLY | O_CREATE | O_OVER);
     if (fd < 0)
         return fd;
@@ -110,6 +109,7 @@ saveFile(char* filename)//保存文件
         write(fd, "\n", 1);
     }
     close(fd);
+    saved = 1;
     return 0;
 }
 
@@ -177,30 +177,71 @@ showCoor()//显示行列号
         setconsole(coor(line, i + 65), tmp[i], coorColor, -1, 2);//然后输出当前光标位置的行、列号
 }
 
-void
-showText()//显示文本
-{
+void 
+updateCharColorByLine(int line){//更新文档中第line行的所有位置上的字符颜色
+    int syn = -1, p = 0;
+    char token[20] = {0};
+    int l, r, i = 0;//每个单词的左右界
+    memset(charColor, 0, sizeof(charColor));//清空原先的颜色
+    while(syn != 0 && i < 80){
+        l = p;
+        Scanner(&syn, textbuf[line], token, &p);
+        r = p;
+        int c = VARIABLE_COLOR;//默认为变量的颜色
+        if(isReserveWord(syn)){
+            c = RESERVERED_WORD_COLOR;
+        }else if(isIDentifier(syn)){
+            c = VARIABLE_COLOR;
+        }else if(isParameter(syn)){
+            c = PARAMETER_COLOR;
+        }else if(isOperatorOrDelimiter(syn)){
+            c = OPERATOR_COLOR;
+        }
+        for(i = l; i < r; i++) charColor[i] = c;//设置单词token每个位置的颜色
+    }
+}
+
+void showTextRange(int up, int down){//更新[up,down)行的内容
     int i, j, l;
-    int n = num_line - startline;
-    if (n > 24)
-        n = 24;
-    for (i = 0; i < 24; ++i)
+    if(up < top) up = 0;
+    if(down > bottom) down = bottom; 
+    for (i = up; i < down; ++i)
         for (j = 0; j < CONSOLE_WIDTH; ++j)
             if( i != cursorX)//如果当前行不是焦点行
                 setconsole(coor(i, j), 0, GRAY, -1, 2);
             else
                 setconsole(coor(i,j), 0, combineColor(BLACK, CURRENT_LINE_COLOR), -1, 2);
-    for (i = startline; i < startline + n; ++i){
+    for (i = startline + up; i < startline + down; ++i){
         l = strlen(textbuf[i]);
-        for (j = 0; j < l; ++j)
+        updateCharColorByLine(i);//更新文档第i行各个位置的字符颜色
+        int backgroundColor = BACKGROUND_COLOR;
+        if((i-startline) == cursorX) backgroundColor = CURRENT_LINE_COLOR;//如果是焦点行 
+        for (j = 0; j < l; ++j){
             if( (i-startline) != cursorX)//如果不是焦点行
-                setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, BACKGROUND_COLOR), -1, 2);
+                backgroundColor = BACKGROUND_COLOR;
             else if( (j-left) != cursorY)//如果是焦点行
-                setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, CURRENT_LINE_COLOR), -1, 2);
+                backgroundColor = CURRENT_LINE_COLOR;
             else//如果是焦点位置
-                setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(VARIABLE_COLOR, CURRENT_POSITION_COLOR), -1, 2);
+                backgroundColor = CURRENT_POSITION_COLOR;
+            setconsole(coor(i - startline, j + left), textbuf[i][j], combineColor(charColor[j], backgroundColor), -1, 2);
+        }
     }
     showCoor();
+}
+
+void showTextLine(int line){//更新一行的内容
+    if(top <= line && line < bottom){
+        showTextRange(line, line+1);
+    }
+}
+
+void
+showText()//更新整个显示区的内容
+{
+    int n = num_line - startline;
+    if (n > bottom)
+        n = bottom;
+    showTextRange(top, n);
 }
 
 char*
@@ -240,14 +281,14 @@ moveCursor(int dx, int dy)//在视图坐标系下，移动光标位置
     if (cursorX < top){//如果光标超出了视图的顶部，
         if (startline > 0){//并且视图的第一行不是文档的第一行，
             startline--;//则将文档显示内容向上移动1行。Note:此处采用的策略，在快速移动多行时，会出错！！！
-            //showText();//并重现显示文本
+            showText();//并重现显示文本
         }
         cursorX = top;//然后将光标定位在视图的顶部。
     }
     if (cursorX > bottom - 1){//如果光标超出了视图的底部，
         if (num_line - startline > 24){//并且视图的最后一行不是文档的最后一行，
             startline++;//则将文档显示内容向下移动1行。Note:此处采用的策略，在快速移动多行时，会出错！！！
-            //showText();//并重现显示文本
+            showText();//并重现显示文本
         }
         cursorX = bottom - 1;//然后将光标定位在视图的底部。
     }
@@ -260,7 +301,6 @@ moveCursor(int dx, int dy)//在视图坐标系下，移动光标位置
         cursorY = l;//同时也不能超过字符串的右端
     setconsole(-1, 0, 0, coor(cursorX, cursorY), 2);
     showCoor();//重新显示当前光标的位置
-    showText();//重新显示文本
 }
 
 int
@@ -271,21 +311,27 @@ runCursorCtrl(char c)//光标的控制
     switch (t){
         case KEY_UP:
             moveCursor(-1, 0);
+            showTextRange(cursorX, cursorX+2);
             return 1;
         case KEY_DN:
             moveCursor(1, 0);
+            showTextRange(cursorX-1, cursorX+1);
             return 1;
         case KEY_LF:
             moveCursor(0, -1);
+            showTextLine(cursorX);
             return 1;
         case KEY_RT:
             moveCursor(0, 1);
+            showTextLine(cursorX);
             return 1;
         case KEY_HOME:
             moveCursor(0, -10000);
+            showTextLine(cursorX);
             return 1;
         case KEY_END:
             moveCursor(0, 10000);
+            showTextLine(cursorX);
             return 1;
         case KEY_INS:
             mode = 1;
@@ -308,7 +354,6 @@ insertline()//在当前光标所在位置的下一行插入新的一行
     }
     textbuf[num_line][j] = 0;//最后一行内容为空
     textbuf[textX][0] = 0;//插入行的内容为空
-    showText();//重新显示视图
 }
 
 void
@@ -325,25 +370,23 @@ deleteline(int offset)//删除一行内容，该行相对于当前的光标位�
     textbuf[num_line][0] = 0;//最后一行内容为空。
     if (num_line == 0)
         insertline();//保证文档中至少有一行内容
-    showText();//出现显示视图
 }
 
 void
 delete()//删除1个字符
 {
     int i, j, l1, l2, textX = cursorX + startline, textY = cursorY + left;//光标在文档中的行与列
-    char c;
     if (cursorY == left){//如果光标位置在当前行的最左端
         if (textX == 0)//同时还是第一行
             return ;//则无法删除字符，直接返回
         l1 = strlen(textbuf[textX - 1]);
         l2 = strlen(textbuf[textX]);
-        moveCursor(-1, 10000);//首先将光标移动到上一行的末尾
         for (i = 0, j = l1; i < l2 && j < MAX_LENGTH; ++i, ++j)//将下一行的内容复制到上一行
             textbuf[textX - 1][j] = textbuf[textX][i];//Note:此处的复制策略比较简单粗暴，存在着一个潜在的bug，当下一行较长时，可能会丢失后半段的字符
         textbuf[textX - 1][j] = 0;
-        deleteline(1);//然后删除下一行，
-        showText();//最后，重新显示文本
+        deleteline(0);//然后删除下一行，
+        moveCursor(-1, l1+1);//将光标移动到上一行的末尾
+        showTextRange(cursorX, bottom);//下一行以下全部刷新
         return;
     }
 	//如果光标位置不是在当前行的最左端
@@ -351,13 +394,6 @@ delete()//删除1个字符
     for (i = textY - 1; i < l1; i++){//将textY右边的字符整体左移一格
         textbuf[textX][i] = textbuf[textX][i + 1];
     }
-    l1--;
-    for (i = textY - 1; i < l1; i++){//只刷新修改行的内容
-        c = textbuf[textX][i];
-        setconsole(coor(cursorX, i), c, GRAY, -1, 2);    
-    }
-    setconsole(coor(cursorX, i), 0, GRAY, -1, 2);
-    moveCursor(0, -1);//光标向左移动一个单位
 }
 
 void
@@ -372,17 +408,11 @@ insert(char c)//插入一个字符
             textbuf[textX][i] = textbuf[textX][i - 1];
         textbuf[textX][l + 1] = 0;
         textbuf[textX][textY] = c;
-        for (i = textY; i < l + 1; ++i)//刷新修改的内容
-            setconsole(coor(cursorX, i), textbuf[textX][i], GRAY, -1, 2);
-        moveCursor(0, 1);//光标向右移动一个单位
-
     }
     if (mode == 0 || mode == 2){//如果处于控制或者替换模式
         textbuf[textX][textY] = c;//直接将当前位置的字符替换
-        setconsole(coor(cursorX, cursorY), c, GRAY, -1, 2);//并刷新修改内容。
         if (textY == l)//如果替换的字符原先是‘0’，
             textbuf[textX][l + 1] = 0;//还需要在当前行末尾补一个‘0’
-        moveCursor(0, 1);//光标向右移动一个单位
     }
 }
 
@@ -396,22 +426,27 @@ runTextInput(char c)//对输入的字符进行处理
             insertline();//首先在当前位置的下一行插入新的一行
             for (i = textY, j = 0; i < l; ++i, ++j){//将当前textY右边的字符串移动到下一行
                 textbuf[textX + 1][j] = textbuf[textX][i];
-                setconsole(coor(cursorX + 1, j), textbuf[textX][i], GRAY, -1, 2);
                 textbuf[textX][i] = 0;
-                setconsole(coor(cursorX, cursorY + j), 0, GRAY, -1, 2);
             }
-            moveCursor(1, -10000);//将光标移动到下一行的开头
+            moveCursor(1, -10000);//将光标移动到下一行的开头            
+            showTextRange(cursorX-1, bottom);
             break;
         case BACKSPACE: // 输入Backspace时
             delete();//则删除一个字符
+            moveCursor(0,-1);
+            showTextLine(cursorX);
             break;
         case HORIZONTAL_TAB:
-            do{//移动到cursorY为8的倍数的位置
+            do{//移动到cursorY为4的倍数的位置
                 insert(' ');
-            }while((cursorY % 8) != 0);
+                moveCursor(0,1);
+            }while((cursorY % 4) != 0);
+            showTextLine(cursorX);
             break;
         default://其余情况
             insert(c);//直接插入字符
+            moveCursor(0,1);
+            showTextLine(cursorX);
             break;
     }
 }
@@ -490,6 +525,7 @@ runControl()
             mode = 1;
             insertline();
             moveCursor(1, 0);
+            showText(cursorX-1, bottom);
             showMessage("-- INSERT --");
             break;
         case 'a'://在当前光标下一个位置开始插入插入字符
@@ -505,7 +541,8 @@ runControl()
         case 'r'://输入"ra"时
             if (isTextChar(controlbuf[1])){//若a是一个显示字符
                 insert(controlbuf[1]);//将其插入光标所在位置
-                moveCursor(0, -1);//光标重新移到a左边的位置
+                // moveCursor(0, -1);//光标重新移到a左边的位置
+                showTextLine(cursorX);
                 break;
             }
             if (controlbuf[1] != 0)
@@ -518,29 +555,42 @@ runControl()
         case 'x'://删除光标出的字符
             moveCursor(0, 1);
             delete();
+            showTextLine(cursorX);
             saved = 0;
             break;
         case 'h'://光标向左移动一个字符
-            if (cursorY == 0)
+            if (cursorY == 0){
                 moveCursor(-1, 10000);
-            else
+                showTextRange(cursorX,cursorX+2);
+            }
+            else{
                 moveCursor(0, -1);
+                showTextLine(cursorX);
+            }
             break;
         case 'j'://光标向下移动一个字符
             moveCursor(1, 0);
+            showTextRange(cursorX-1, cursorX+1);
             break;
         case 'k'://光标向上移动一个字符
             moveCursor(-1, 0);
+            showTextRange(cursorX, cursorX+2);
             break;
         case 'l'://向右移动一个字符
-            if (cursorY >= strlen(textbuf[cursorX + startline]) && cursorX + startline != num_line - 1)
+            if (cursorY >= strlen(textbuf[cursorX + startline]) && 
+            cursorX + startline != num_line - 1){
                 moveCursor(1, -10000);
-            else
+                showTextRange(cursorX-1, cursorX+1);
+            }
+            else{
                 moveCursor(0, 1);
+                showTextLine(cursorX);
+            }   
             break;
         case 'd'://删除光标所在行
             deleteline(0);
             moveCursor(0, -10000);
+            showText(cursorX-1, bottom);
             showMessage("1 line deleted");
             saved = 0;
             break;
@@ -623,18 +673,7 @@ main(int argc, char *argv[])
     showText();//将文档内容显示在显示区
     showMessage(getFileInfo());//在最后一行显示当前文件的文件名和行数
     int n;
-    /*
-    while(1){
-        n = read(0, buf, sizeof(buf));
-        printf(1,buf);
-        char c[1]; c[0] = n + '0';
-        printf(1, c);
-        if(n<=0) break;
-    }
-    */
-    
     while ((n = read(0, buf, sizeof(buf))) > 0){//不断从键盘读入字符
-        //printf(1,"He\n");
         if (buf[0] != 0)
             parseInput(buf[0]);//并进行处理
     }
