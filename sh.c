@@ -308,8 +308,8 @@ main(void)
     }
     if(buf[0] == 'p' && buf[1] == 'w' && buf[2] == 'd')
     {
-      printf(2,"%s\n",dir);
-      continue;
+      //printf(2,"%s\n",dir);
+      //continue;
     }
     if(fork1() == 0)
       runcmd(parsecmd(buf));

@@ -414,6 +414,83 @@ sys_mknod(void)
   return 0;
 }
 
+
+void updatecwdname(char * cwdname, char * path)
+{
+  while(1)
+  {
+    int endflag = 0;
+    switch(*path)
+    {
+      case '/':
+        safestrcpy(cwdname,path,sizeof(path));
+        endflag = 1;
+      break;
+      case '.':
+        if(path[1] == '.')
+        {
+          char * slash = cwdname;
+          char * p = cwdname;
+          while(*p)
+          {
+            if(*p == '/')
+              slash = p;
+            p++;
+          }
+          p = slash;
+          if(p == cwdname)
+            p++;
+          while(*p)
+          {
+            *p = 0;
+            p++;
+          }
+          endflag = 1;
+          if(path[2] == '/')
+          {
+            path += 3;
+            endflag = 0;
+          }
+        }
+        else if(path[1] == '/')
+        {
+          path += 2;
+        }
+        else
+        {
+          endflag = 1;
+        }
+      break;
+      default:
+      {
+        char * p = cwdname;
+        while(*p)
+        {
+          p++;
+        }
+        p--;
+        if(*p == '/')
+        {
+          p++;
+          safestrcpy(p,path,sizeof(path));
+          //printf(2,"%s %s\n",cwdname,path);
+        }
+        else
+        {
+          p++;
+          *p = '/';
+          p++;
+          safestrcpy(p,path,sizeof(path));
+          //printf(2,"%s %s\n",cwdname,path);
+        }
+        endflag = 1;
+      }
+      break;
+    }
+    if(endflag)
+      break; 
+  }
+}
 int
 sys_chdir(void)
 {
@@ -436,6 +513,7 @@ sys_chdir(void)
   iput(curproc->cwd);
   end_op();
   curproc->cwd = ip;
+  updatecwdname(curproc->cwdname,path);
   return 0;
 }
 
@@ -532,5 +610,15 @@ int sys_lseek(void) {
 
 	f->off = newoff;
 	return newoff;
+}
+
+int
+sys_getcwd(void)
+{
+  char * cwd;
+  if(argstr(0, &cwd) < 0)
+    return -1;
+  safestrcpy(cwd,myproc()->cwdname,sizeof(myproc()->cwdname));
+  return 0;
 }
 
