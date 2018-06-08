@@ -17,6 +17,7 @@
 #include "fcntl.h"
 #include "memlayout.h"
 #include "x86.h"
+#include "date.h"
 
 #include "history.h"
 #include "var_in_kernel.h"
@@ -302,6 +303,9 @@ create(char *path, short type, short major, short minor)
   ip->major = major;
   ip->minor = minor;
   ip->nlink = 1;
+  rtcdate date;
+  datetime(&date);
+  ip->ctime = dateToTimestamp(&date);
   iupdate(ip);
 
   if(type == T_DIR){  // Create . and .. entries.
