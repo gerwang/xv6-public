@@ -271,9 +271,6 @@ int
 main(void)
 {
   static char buf[100];
-  char dir[1000];
-  dir[0] = '/';
-  dir[1] = '\0';
   int fd;
   initHistory(&hs);
   getHistory(&hs);
@@ -300,16 +297,7 @@ main(void)
       buf[strlen(buf)] = 0;  // chop \n
       if(chdir(buf+3) < 0)
         printf(2, "cannot cd %s\n", buf+3);
-      else
-      {
-        editDir(dir,buf+3);
-      }
       continue;
-    }
-    if(buf[0] == 'p' && buf[1] == 'w' && buf[2] == 'd')
-    {
-      //printf(2,"%s\n",dir);
-      //continue;
     }
     if(fork1() == 0)
       runcmd(parsecmd(buf));
