@@ -211,62 +211,6 @@ getcmd(char *buf, int nbuf)
   return 0;
 }
 
-void editDir(char * dir, char * cddir)    //edit current directory
-{
-  //printf(2,"%s %s\n",dir,cddir);
-  switch(*cddir)
-  {
-    case '/':
-      strcpy(dir,cddir);
-    break;
-    case '.':
-      if(cddir[1] == '.')
-      {
-        char * slash = dir;
-        char * p = dir;
-        while(*p)
-        {
-          if(*p == '/')
-            slash = p;
-          p++;
-        }
-        p = slash;
-        if(p == dir)
-          p++;
-        while(*p)
-        {
-          *p = 0;
-          p++;
-        }
-      }
-    break;
-    default:
-    {
-      char * p = dir;
-      while(*p)
-      {
-        p++;
-      }
-      p--;
-      if(*p == '/')
-      {
-        p++;
-        strcpy(p,cddir);
-        //printf(2,"%s %s\n",dir,cddir);
-      }
-      else
-      {
-        p++;
-        *p = '/';
-        p++;
-        strcpy(p,cddir);
-        //printf(2,"%s %s\n",dir,cddir);
-      }
-    }
-    break;
-  }
-}
-
 int
 main(void)
 {
