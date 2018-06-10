@@ -191,7 +191,7 @@ void            uartintr(void);
 void            uartputc(int);
 
 // vm.c
-extern struct shmnode* shmlist;
+extern struct shmnode shmlist[256];
 void            seginit(void);
 void            kvmalloc(void);
 pde_t*          setupkvm(void);
@@ -210,8 +210,8 @@ void            pagefault(uint err_code);
 void            swappage(uint);
 int             createshm(uint sig, uint bytes);
 int             deleteshm(uint sig);
-int             readshm(uint sig, char* rstr);
-int             writeshm(uint sig, char* wstr, uint num);
+int             readshm(uint sig, char* rstr, uint offset);
+int             writeshm(uint sig, char* wstr, uint num, uint offset);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

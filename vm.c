@@ -20,20 +20,12 @@ extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
 struct shmnode
 {
-  struct shmnode* next;
   uint sig;//signature
   struct shmindex *addr; //page table physical address
-  unsigned pagenum;//total page numbers in this shared area
-  unsigned curchs;//current characters' number stored in these shared pages
+  uint pagenum;//total page numbers in this shared area
   uint count;//how many references from processes are pointed to this sig
-}*shmlist;//shmlist is the head node
+}shmlist[256];
 
-struct shmhead
-{
-  struct shmnode* next;
-  char* addr;
-  int nodenum;
-}*shmlist1;
 
 struct spinlock kshmlock;
 
@@ -912,168 +904,183 @@ void swappage(uint addr)
   lcr3(V2P(curproc->pgdir));
 }
 
-void
-initshm(void)
+// init shared memory
+void initshm(void)
 {
-  shmlist1 = (struct shmhead*)kalloc();
-  shmlist1->addr = ()
+  for (int i = 0; i < 1024; i++)
+  {
+    shmlist[i].sig = 0;
+    shmlist[i].count = 0;
+    shmlist[i].pagenum = 0;
+    shmlist[i].addr = 0;
+  }
 }
+
 // increase some sig counts in shmlist
 // add permission to now proc
 // if sig does not exist, then create shared physical pages that can cover data of size "bytes".
 // return 1 when succeed create, return 0 when sig already exists, return -1 when fail.
-int
-createshm(uint sig, uint bytes)
+int createshm(uint sig, uint bytes)
 {
-  if(sig == 0)
+  if (sig == 0 || bytes > 1024 * PGSIZE)
+  {
     return -1;
-  //todo:lock!
-  acquire(&kshmlock);
-  struct shmnode* p = shmlist->next;
-  while(p != 0)
-  {
-    if(p->sig == sig)
-      break;
-    p = p->next;
   }
-  if(p != 0)//this sig already exists
+  acquire(&kshmlock);
+  int firstzero = -1; //first position to insert a new sig
+  int i;
+  for (i = 0; i < 256; i++)
   {
-    struct proc* pr = myproc();
-    int i;
-    for(i = 0;i < MAX_SIG_PER_PROC;i++)
+    if (firstzero < 0 && shmlist[i].sig == 0)
     {
-      if(pr->sig_permit[i] == 0)
+      firstzero = i;
+    }
+    if (shmlist[i].sig == sig)
+    {
+      break;
+    }
+  }
+  if (i != 256) //this sig already exists
+  {
+    struct proc *pr = myproc();
+    int i;
+    for (i = 0; i < MAX_SIG_PER_PROC; i++)
+    {
+      if (pr->sig_permit[i] == 0)
       {
         break;
       }
     }
-    if(i == MAX_SIG_PER_PROC)//overflow, already have 5 sigs in this proc
+    if (i == MAX_SIG_PER_PROC) //overflow, already have 5 sigs in this proc
     {
       release(&kshmlock);
       return -1;
     }
     pr->sig_permit[i] = sig;
-    p->count++;
-    //todo:如何使用bytes?
+    shmlist[i].count++;
+    if (bytes > shmlist[i].pagenum * PGSIZE) //need extend
+    {
+      int target = PGROUNDUP(bytes) / PGSIZE;
+      for (int j = shmlist[i].pagenum; j < target; j++)
+      {
+        if (shmlist[i].addr->addrs[j] = kalloc() == 0)
+        {
+          release(&kshmlock);
+          return -1;
+        }
+      }
+    }
+    release(&kshmlock);
     return 0;
   }
-  else if((p = (struct shmnode*)kalloc()) == 0)//kalloc fails
+  else
   {
-    return -1;
-  }
-  else//alloc a new sig unit
-  {
-    if((p->addr = (struct shmindex*)kalloc()) == 0)
+    int pos = firstzero == -1 ? i : firstzero;
+    shmlist[pos].sig = sig;
+    shmlist[pos].count = 1;
+    shmlist[pos].pagenum = PGROUNDUP(bytes) / PGSIZE;
+    int i0;
+    for (i0 = 0; i0 < shmlist[pos].pagenum; i0++)
     {
-      return -1;
-    }
-    p->sig = sig;
-    p->next = shmlist->next;
-    shmlist->next = p;
-    p->pagenum = PGROUNDUP(bytes) / PGSIZE;
-    p->curchs = 0;
-    p->count = 1;
-
-    int i;
-    for (i = 0; i < p->pagenum; i++)
-    {
-      if ((p->addr->addrs[i] = kalloc()) == 0)
+      if ((shmlist[pos].addr->addrs[i0] = kalloc()) == 0)
       {
         int j;
-        for (j = 0; j < i; j++)
-          kfree(p->addr->addrs[j]);
+        for (j = 0; j < i0; j++)
+          kfree(shmlist[pos].addr->addrs[j]);
+        release(&kshmlock);
         return -1;
       }
     }
 
-    for (i = p->pagenum; i < 1024; i++)
-      p->addr->addrs[i] = 0xffffffff;
-
+    for (i = shmlist[pos].pagenum; i < 1024; i++)
+      shmlist[pos].addr->addrs[i] = 0xffffffff;
+    release(&kshmlock);
     return 0;
+  }
 }
 
 // decrease some sig counts in shmlist
-// remove permission to now proc 
+// remove permission to now proc
 // if count is zero, then delete shared physical pages pointed by sig.
 // return 1 when succeed, return 0 when delelte a sig, return -1 when fail.
-int
-deleteshm(uint sig)
+int deleteshm(uint sig)
 {
-  if(sig == 0)
+  if (sig == 0)
     return -1;
-  //todo:lock!
-  //acquire()
-  struct shmnode* p = shmlist->next;
-  struct shmnode* q = shmlist;//pre
-  while(p != 0)
+  acquire(&kshmlock);
+  int i;
+  for (i = 0; i < 256; i++)
   {
-    if(p->sig == sig)
+    if (shmlist[i].sig == sig)
+    {
       break;
-    q = p;
-    p = p->next;
+    }
   }
-  if(p == 0)//shared memory pages do not exist
+  if (i == 256) //shared memory pages do not exist
   {
-  //release();
+    release(&kshmlock);
     return -1;
   }
-
-  struct proc* pr = myproc();
+  struct proc *pr = myproc();
   int j;
-  for(j = 0;j < MAX_SIG_PER_PROC;j++)
+  for (j = 0; j < MAX_SIG_PER_PROC; j++)
   {
-    if(pr->sig_permit[j] == sig)
+    if (pr->sig_permit[j] == sig)
     {
       pr->sig_permit[j] = 0;
       break;
     }
   }
-  if(j == MAX_SIG_PER_PROC)//not found
+  if (j == MAX_SIG_PER_PROC) //not found
   {
+    release(&kshmlock);
     return -1;
   }
-
-  p->count--;
-  
-  if(p->count == 0)//delete sig node
+  shmlist[i].count--;
+  if (shmlist[i].count == 0) //delete sig node,free addr
   {
-    q->next = p->next;
-    char* w = p->addr;
-    //todo
-    for(int i = 0;i < p->pagenum;i++)
+    for (i = 0; i < shmlist[i].pagenum; i++)
     {
-      uint tmp = strtouint(w, 4);
-      kfree((char*)tmp);
-      w += PGSIZE;
+      kfree(shmlist[i].addr->addrs[i]);
     }
-    kfree((char*)p);
-    //release();
+    kree((char *)shmlist[i].addr);
   }
+  release(&kshmlock);
   return 1;
 }
 
 // write data to shared pages
 // return the number of characters actually written to shmpages
-int
-writeshm(uint sig, char* wstr, uint num)
+// return -1 if failed
+int writeshm(uint sig, char *wstr, uint num, uint offset)
 {
-  struct shmnode* p = shmlist->next;
-  while(p != 0)
+  int i;
+  for(i=0;i<256;i++)
   {
-    if(p->sig == sig)
+    if(shmlist[i].sig==sig)
+      break;
+  }
+  if(i==256)//does not exist
+  {
+    return -1;
+  }
+  struct shmnode *p = shmlist->next;
+  while (p != 0)
+  {
+    if (p->sig == sig)
       break;
     p = p->next;
   }
-  if(p == 0)//do not exist
+  if (p == 0) //do not exist
   {
     return 0;
   }
-  if(num > PGSIZE * p->pagenum)//overflow
+  if (num > PGSIZE * p->pagenum) //overflow
   {
     return 0;
   }
   int i = 0;
-  for(;i < num;i++)
+  for (; i < num; i++)
   {
     p->addr[i] = wstr[i];
   }
@@ -1083,21 +1090,20 @@ writeshm(uint sig, char* wstr, uint num)
 
 // read data from shared pages
 // return the number of characters actually read from shmpages
-int
-readshm(uint sig, char* rstr)
+int readshm(uint sig, char *rstr, uint offset)
 {
-  struct shmnode* p = shmlist->next;
-  while(p != 0)
+  struct shmnode *p = shmlist->next;
+  while (p != 0)
   {
-    if(p->sig == sig)
+    if (p->sig == sig)
       break;
     p = p->next;
   }
-  if(p == 0)//do not exist
+  if (p == 0) //do not exist
   {
     return 0;
   }
-  for(int i = 0;i < p->curchs;i++)
+  for (int i = 0; i < p->curchs; i++)
   {
     rstr[i] = p->addr[i];
   }

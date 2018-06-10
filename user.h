@@ -27,7 +27,7 @@ int nfpgs(void);
 int createshm(uint, uint);
 int deleteshm(uint);
 int readshm(uint, char*, uint);
-int writeshm(uint, char*);
+int writeshm(uint, char*, uint, uint);
 
 // ulib.c
 int stat(char*, struct stat*);

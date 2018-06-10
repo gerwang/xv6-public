@@ -481,6 +481,10 @@ fork(void)
 
   release(&ptable.lock);
 
+  for(int ptr = 0;ptr < MAX_SIG_PER_PROC;ptr++)
+  {
+    np->sig_permit[ptr] = 0;
+  }
   return pid;
 }
 
