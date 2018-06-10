@@ -17,10 +17,18 @@ struct shmnode
 {
   struct shmnode* next;
   uint sig;//signature
-  char* addr;//initial physical address
+  char* addr;//page table physical address
   unsigned pagenum;//total page numbers in this shared area
   unsigned curchs;//current characters' number stored in these shared pages
+  uint count;//how many references from processes are pointed to this sig
 }*shmlist;//shmlist is the head node
+
+struct shmhead
+{
+  struct shmnode* next;
+  char* addr;
+  int nodenum;
+}*shmlist1;
 
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
@@ -897,11 +905,33 @@ void swappage(uint addr)
   lcr3(V2P(curproc->pgdir));
 }
 
-// Create shared physical pages that can cover data of size "bytes".
-// return 1 when succeed, return 0 when fail.
+uint strtouint(char* c, int num)
+{
+  uint u = 0;
+  for(int i = 0;i < num;i++)
+  {
+    u *= 256;
+    u += (unsigned char)c[i];
+  }
+  return u;
+}
+
+void
+initshm(void)
+{
+  shmlist1 = (struct shmhead*)kalloc();
+  shmlist1->addr = ()
+}
+// increase some sig counts in shmlist
+// add permission to now proc
+// if sig does not exist, then create shared physical pages that can cover data of size "bytes".
+// return 1 when succeed create, return 0 when sig already exists, return -1 when fail.
 int
 createshm(uint sig, uint bytes)
 {
+  if(sig == 0)
+    return -1;
+  //todo:lock!
   struct shmnode* p = shmlist->next;
   while(p != 0)
   {
@@ -909,34 +939,72 @@ createshm(uint sig, uint bytes)
       break;
     p = p->next;
   }
-  if(p != 0 || (p = (struct shmnode*)kmalloc()) == 0)//Already exists or kmalloc fails
+  if(p != 0)//this sig already exists
   {
+    struct proc* pr = myproc();
+    int i;
+    for(i = 0;i < MAX_SIG_PER_PROC;i++)
+    {
+      if(pr->sig_permit[i] == 0)
+      {
+        break;
+      }
+    }
+    if(i == MAX_SIG_PER_PROC)//overflow, already have 5 sigs in this proc
+    {
+      return -1;
+    }
+    pr->sig_permit[i] = sig;
+    p->count++;
+    //todo:如何使用bytes?
     return 0;
   }
-  p->sig = sig;
-  p->next = shmlist->next;
-  shmlist->next = p;
-  p->pagenum = PGROUNDUP(bytes) / PGSIZE;
-  p->curchs = 0;
-  if((p->addr = kmalloc()) == 0)
+  else if((p = (struct shmnode*)kalloc()) == 0)//kalloc fails
   {
-    return 0;
+    return -1;
   }
-  char* q = p->addr + (uint)PGSIZE;
-  for(int i = 1;i < p->pagenum;i++)
+  else//alloc a new sig unit
   {
-      if((q = kmalloc()) == 0)
-        return 0;
-      q += PGSIZE;
-  }
+    if((p->addr = kalloc()) == 0)
+    {
+      return -1;
+    }
+    p->sig = sig;
+    p->next = shmlist->next;
+    shmlist->next = p;
+    p->pagenum = PGROUNDUP(bytes) / PGSIZE;
+    p->curchs = 0;
+    p->count = 1;
+    char* q = p->addr + sizeof(uint);
+    char* tmp;
+    int i;
+    for(i = 1;i < p->pagenum;i++)
+    {
+        if((tmp = kalloc()) == 0)
+          return 0;
+        *((uint*)q) = (uint)tmp;
+        q += sizeof(uint);
+    }
+    for(;i <= PGSIZE / sizeof(uint);i++)
+    {
+      *((uint*)q)=0xFFFFFFFF;
+      q += sizeof(uint);
+    }
   return 1;
+  } 
 }
 
-// delete shared physical pages pointed by sig.
-// return 1 when succeed, return 0 when fail.
+// decrease some sig counts in shmlist
+// remove permission to now proc 
+// if count is zero, then delete shared physical pages pointed by sig.
+// return 1 when succeed, return 0 when delelte a sig, return -1 when fail.
 int
 deleteshm(uint sig)
 {
+  if(sig == 0)
+    return -1;
+  //todo:lock!
+  //acquire()
   struct shmnode* p = shmlist->next;
   struct shmnode* q = shmlist;//pre
   while(p != 0)
@@ -948,16 +1016,41 @@ deleteshm(uint sig)
   }
   if(p == 0)//shared memory pages do not exist
   {
-    return 0;
+  //release();
+    return -1;
   }
-  q->next = p->next;
-  char* w = p->addr;
-  for(int i = 0;i < p->pagenum;i++)
+
+  struct proc* pr = myproc();
+  int j;
+  for(j = 0;j < MAX_SIG_PER_PROC;j++)
   {
-    kfree(w);
-    w += PGSIZE;
+    if(pr->sig_permit[j] == sig)
+    {
+      pr->sig_permit[j] = 0;
+      break;
+    }
   }
-  kfree((char*)p);
+  if(j == MAX_SIG_PER_PROC)//not found
+  {
+    return -1;
+  }
+
+  p->count--;
+  
+  if(p->count == 0)//delete sig node
+  {
+    q->next = p->next;
+    char* w = p->addr;
+    //todo
+    for(int i = 0;i < p->pagenum;i++)
+    {
+      uint tmp = strtouint(w, 4);
+      kfree((char*)tmp);
+      w += PGSIZE;
+    }
+    kfree((char*)p);
+    //release();
+  }
   return 1;
 }
 

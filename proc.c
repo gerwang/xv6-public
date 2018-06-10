@@ -340,6 +340,11 @@ found:
   p->memqueue_head = 0;
   p->memqueue_tail = 0;
 
+  //Initialize sigs
+  for(int k = 0;k < MAX_SIG_PER_PROC;k++)
+  {
+    p->sig_permit[k] = 0;
+  }
   return p;
 }
 
@@ -488,6 +493,12 @@ exit(void)
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
+
+  // Remove all sigs
+  for(int i = 0;i < MAX_SIG_PER_PROC;i++)
+  {
+    deleteshm(curproc->sig_permit[i]);
+  }
 
   if(curproc == initproc)
     panic("init exiting");

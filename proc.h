@@ -53,6 +53,9 @@ enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 #define MAX_SWAPFILES 6
 
+//MAX number of sigs a proc can have access to
+#define MAX_SIG_PER_PROC 5
+
 struct memstab_page_entry
 {
   char *vaddr;
@@ -121,4 +124,6 @@ struct proc {
 
   struct swapstab_page *swapstab_head;
   struct swapstab_page *swapstab_tail;
+
+  int sig_permit[MAX_SIG_PER_PROC];//sigs this proc has access to
 };
