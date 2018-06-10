@@ -13,6 +13,14 @@
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
+struct shmnode
+{
+  struct shmnode* next;
+  uint sig;//signature
+  char* addr;//initial physical address
+  unsigned pagenum;//total page numbers in this shared area
+  unsigned curchs;//current characters' number stored in these shared pages
+}*shmlist;//shmlist is the head node
 
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
@@ -887,4 +895,120 @@ void swappage(uint addr)
 
   // Refresh page dir.
   lcr3(V2P(curproc->pgdir));
+}
+
+// Create shared physical pages that can cover data of size "bytes".
+// return 1 when succeed, return 0 when fail.
+int
+createshm(uint sig, uint bytes)
+{
+  struct shmnode* p = shmlist->next;
+  while(p != 0)
+  {
+    if(p->sig == sig)
+      break;
+    p = p->next;
+  }
+  if(p != 0 || (p = (struct shmnode*)kmalloc()) == 0)//Already exists or kmalloc fails
+  {
+    return 0;
+  }
+  p->sig = sig;
+  p->next = shmlist->next;
+  shmlist->next = p;
+  p->pagenum = PGROUNDUP(bytes) / PGSIZE;
+  p->curchs = 0;
+  if((p->addr = kmalloc()) == 0)
+  {
+    return 0;
+  }
+  char* q = p->addr + (uint)PGSIZE;
+  for(int i = 1;i < p->pagenum;i++)
+  {
+      if((q = kmalloc()) == 0)
+        return 0;
+      q += PGSIZE;
+  }
+  return 1;
+}
+
+// delete shared physical pages pointed by sig.
+// return 1 when succeed, return 0 when fail.
+int
+deleteshm(uint sig)
+{
+  struct shmnode* p = shmlist->next;
+  struct shmnode* q = shmlist;//pre
+  while(p != 0)
+  {
+    if(p->sig == sig)
+      break;
+    q = p;
+    p = p->next;
+  }
+  if(p == 0)//shared memory pages do not exist
+  {
+    return 0;
+  }
+  q->next = p->next;
+  char* w = p->addr;
+  for(int i = 0;i < p->pagenum;i++)
+  {
+    kfree(w);
+    w += PGSIZE;
+  }
+  kfree((char*)p);
+  return 1;
+}
+
+// write data to shared pages
+// return the number of characters actually written to shmpages
+int
+writeshm(uint sig, char* wstr, uint num)
+{
+  struct shmnode* p = shmlist->next;
+  while(p != 0)
+  {
+    if(p->sig == sig)
+      break;
+    p = p->next;
+  }
+  if(p == 0)//do not exist
+  {
+    return 0;
+  }
+  if(num > PGSIZE * p->pagenum)//overflow
+  {
+    return 0;
+  }
+  int i = 0;
+  for(;i < num;i++)
+  {
+    p->addr[i] = wstr[i];
+  }
+  p->curchs = i;
+  return i;
+}
+
+// read data from shared pages
+// return the number of characters actually read from shmpages
+int
+readshm(uint sig, char* rstr)
+{
+  struct shmnode* p = shmlist->next;
+  while(p != 0)
+  {
+    if(p->sig == sig)
+      break;
+    p = p->next;
+  }
+  if(p == 0)//do not exist
+  {
+    return 0;
+  }
+  for(int i = 0;i < p->curchs;i++)
+  {
+    rstr[i] = p->addr[i];
+  }
+  return p->curchs;
 }

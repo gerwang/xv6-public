@@ -120,6 +120,10 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_nfpgs(void);
+extern int sys_writeshm(void);
+extern int sys_readshm(void);
+extern int sys_createshm(void);
+extern int sys_deleteshm(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
