@@ -12,6 +12,7 @@ int fork2(void);
 void printTaskMgrInfo(void);
 void printString();
 void printPageInfo();
+int printint(int xx, int base, int sign, int pos, int limit, char *buff);
 
 void
 runTaskMgr(void)
@@ -66,7 +67,7 @@ printTaskMgrInfo(void)
 void
 printString(char *fmt, int line, ...) // 打印在第line行
 {
-  int c, digit, count, remain, currentDigit = 0; //目前輸出到第line行第currentDigit位
+  int c, digitsDesired, digitsUsed, remain, currentDigit = 0; //目前輸出到第line行第currentDigit位
   char *s;
   memset(buff[line/80], 0, sizeof(char)*80);
   uint *argp;
@@ -100,36 +101,79 @@ printString(char *fmt, int line, ...) // 打印在第line行
     {
       break;
     }
-    digit = 0;
+    digitsDesired = 0;
+    digitsUsed = 0;
     while (c >= '0' && c <= '9')
     {
-      digit = digit * 10 + c - '0';
+      digitsDesired = digitsDesired * 10 + c - '0';
       c = fmt[++i] & 0xff;
     }
-    if (currentDigit + digit > 80)
+    if (currentDigit + digitsDesired > 80)
     {
       goto bad;
     }
-    remain = (digit == 0) ? (80 - currentDigit) : digit;
+    remain = (digitsDesired == 0) ? (80 - currentDigit) : digitsDesired;
     
     switch(c)
     {
       case 'd':
+        digitsUsed = printint(*argp++, 10, 1, currentDigit, remain, buff[line / 80]);
+        currentDigit += digitsUsed;
+        while(digitsUsed <= digitsDesired)
+        {
+          buff[line / 80][currentDigit++] = 0;
+          digitsUsed++;
+        }
         break;
       case 'x':
       case 'p':
+        digitsUsed = printint(*argp++, 16, 0, currentDigit, remain, buff[line / 80]);
+        currentDigit += digitsUsed;
+        while(digitsUsed <= digitsDesired)
+        {
+          buff[line / 80][currentDigit++] = 0;
+          digitsUsed++;
+        }
         break;
       case 's':
+        if((s = (char*)*argp++) == 0)
+    	    s = "(null)";
+        while(digitsUsed < remain)
+        {
+          buff[line / 80][currentDigit++] = *s;
+          s++;
+          digitsUsed++;
+        }
+	  		while(digitsUsed <= digitsDesired) //補空格
+	  		{
+				  buff[line / 80][currentDigit++] = 0;
+				  digitsUsed++;
+	  		}
         break;
       case '%':
+        buff[line / 80][currentDigit] = c;
         break;
       default:
+        if (currentDigit > 78)
+        {
+          goto bad;
+        }
+        else
+        {
+          buff[line / 80][currentDigit++] = '%';
+          buff[line / 80][currentDigit++] = c;
+        }
         break;
     }
     return;
   }
   bad:
   
+}
+
+int printint(int xx, int base, int sign, int pos, int limit, char *buff)
+{
+
 }
 
 void
