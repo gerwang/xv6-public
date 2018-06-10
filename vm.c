@@ -1049,63 +1049,71 @@ int deleteshm(uint sig)
   return 1;
 }
 
-// write data to shared pages
+// write data from wstr to shared pages with offset "offset"
+// data length is num
 // return the number of characters actually written to shmpages
 // return -1 if failed
 int writeshm(uint sig, char *wstr, uint num, uint offset)
 {
   int i;
-  for(i=0;i<256;i++)
+  for (i = 0; i < 256; i++)
   {
-    if(shmlist[i].sig==sig)
+    if (shmlist[i].sig == sig)
       break;
   }
-  if(i==256)//does not exist
+  if (i == 256) //does not exist
   {
     return -1;
   }
-  struct shmnode *p = shmlist->next;
-  while (p != 0)
+  if (num > PGSIZE * shmlist[i].pagenum - offset) //overflow
   {
-    if (p->sig == sig)
-      break;
-    p = p->next;
+    return -1;
   }
-  if (p == 0) //do not exist
+
+  int pageindex = offset % PGSIZE == 0 ? offset / PGSIZE : offset / PGSIZE + 1; //start page
+  int offs = offset % PGSIZE;                                                   //offset in one page
+  for (int j = num; j > 0; j--)
   {
-    return 0;
+    shmlist[i].addr->addrs[pageindex][offs++] = wstr[num - j];
+    if (offs == PGSIZE) //change page
+    {
+      pageindex++;
+      offs = 0;
+    }
   }
-  if (num > PGSIZE * p->pagenum) //overflow
-  {
-    return 0;
-  }
-  int i = 0;
-  for (; i < num; i++)
-  {
-    p->addr[i] = wstr[i];
-  }
-  p->curchs = i;
-  return i;
+  return 0;
 }
 
-// read data from shared pages
+// read data to rstr from shared pages with offset "offset"
 // return the number of characters actually read from shmpages
-int readshm(uint sig, char *rstr, uint offset)
+// return -1 if failed
+int readshm(uint sig, char *rstr, uint num, uint offset)
 {
-  struct shmnode *p = shmlist->next;
-  while (p != 0)
+  int i;
+  for (i = 0; i < 256; i++)
   {
-    if (p->sig == sig)
+    if (shmlist[i].sig == sig)
       break;
-    p = p->next;
   }
-  if (p == 0) //do not exist
+  if (i == 256) //does not exist
   {
-    return 0;
+    return -1;
   }
-  for (int i = 0; i < p->curchs; i++)
+  if (num > PGSIZE * shmlist[i].pagenum - offset) //overflow
   {
-    rstr[i] = p->addr[i];
+    return -1;
   }
-  return p->curchs;
+
+  int pageindex = offset % PGSIZE == 0 ? offset / PGSIZE : offset / PGSIZE + 1; //start page
+  int offs = offset % PGSIZE;                                                   //offset in one page
+  for (int j = num; j > 0; j--)
+  {
+    rstr[num - j] = shmlist[i].addr->addrs[pageindex][offs++];
+    if (offs == PGSIZE) //change page
+    {
+      pageindex++;
+      offs = 0;
+    }
+  }
+  return 0;
 }

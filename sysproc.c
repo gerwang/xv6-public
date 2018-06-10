@@ -148,10 +148,11 @@ sys_readshm(void)
 {
   int sig;
   char** str;
+  int num;
   int offset;
-  if(argint(0, &sig) < 0 || argstr(1, str) < 0 || argint(2,&offset) < 0)
+  if(argint(0, &sig) < 0 || argstr(1, str) < 0 || argint(2, &num) < 0 || argint(3 ,&offset) < 0)
   {
     return 0;
   }
-  return readshm(sig, *str, offset);
+  return readshm(sig, *str, num, offset);
 }

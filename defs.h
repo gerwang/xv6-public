@@ -210,7 +210,7 @@ void            pagefault(uint err_code);
 void            swappage(uint);
 int             createshm(uint sig, uint bytes);
 int             deleteshm(uint sig);
-int             readshm(uint sig, char* rstr, uint offset);
+int             readshm(uint sig, char* rstr, uint num, uint offset);
 int             writeshm(uint sig, char* wstr, uint num, uint offset);
 
 // number of elements in fixed-size array
