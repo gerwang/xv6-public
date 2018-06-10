@@ -22,7 +22,6 @@ OBJS = \
 	syscall.o\
 	sysfile.o\
 	sysproc.o\
-	sysmy.o\
 	trapasm.o\
 	trap.o\
 	uart.o\
@@ -181,7 +180,6 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
-	_latehello\
 	_jerry\
 	_timetest\
 	_stdtests\
