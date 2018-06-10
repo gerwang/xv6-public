@@ -11,13 +11,18 @@
 
 #define SWAP_BUF_SIZE (PGSIZE / 4)    // Buffer size when swap.
 
+struct shmindex
+{
+  char* addrs[1024];
+};
+
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
 struct shmnode
 {
   struct shmnode* next;
   uint sig;//signature
-  char* addr;//page table physical address
+  struct shmindex *addr; //page table physical address
   unsigned pagenum;//total page numbers in this shared area
   unsigned curchs;//current characters' number stored in these shared pages
   uint count;//how many references from processes are pointed to this sig
@@ -29,6 +34,8 @@ struct shmhead
   char* addr;
   int nodenum;
 }*shmlist1;
+
+struct spinlock kshmlock;
 
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
@@ -905,17 +912,6 @@ void swappage(uint addr)
   lcr3(V2P(curproc->pgdir));
 }
 
-uint strtouint(char* c, int num)
-{
-  uint u = 0;
-  for(int i = 0;i < num;i++)
-  {
-    u *= 256;
-    u += (unsigned char)c[i];
-  }
-  return u;
-}
-
 void
 initshm(void)
 {
@@ -932,6 +928,7 @@ createshm(uint sig, uint bytes)
   if(sig == 0)
     return -1;
   //todo:lock!
+  acquire(&kshmlock);
   struct shmnode* p = shmlist->next;
   while(p != 0)
   {
@@ -952,6 +949,7 @@ createshm(uint sig, uint bytes)
     }
     if(i == MAX_SIG_PER_PROC)//overflow, already have 5 sigs in this proc
     {
+      release(&kshmlock);
       return -1;
     }
     pr->sig_permit[i] = sig;
@@ -965,7 +963,7 @@ createshm(uint sig, uint bytes)
   }
   else//alloc a new sig unit
   {
-    if((p->addr = kalloc()) == 0)
+    if((p->addr = (struct shmindex*)kalloc()) == 0)
     {
       return -1;
     }
@@ -975,23 +973,23 @@ createshm(uint sig, uint bytes)
     p->pagenum = PGROUNDUP(bytes) / PGSIZE;
     p->curchs = 0;
     p->count = 1;
-    char* q = p->addr + sizeof(uint);
-    char* tmp;
+
     int i;
-    for(i = 1;i < p->pagenum;i++)
+    for (i = 0; i < p->pagenum; i++)
     {
-        if((tmp = kalloc()) == 0)
-          return 0;
-        *((uint*)q) = (uint)tmp;
-        q += sizeof(uint);
+      if ((p->addr->addrs[i] = kalloc()) == 0)
+      {
+        int j;
+        for (j = 0; j < i; j++)
+          kfree(p->addr->addrs[j]);
+        return -1;
+      }
     }
-    for(;i <= PGSIZE / sizeof(uint);i++)
-    {
-      *((uint*)q)=0xFFFFFFFF;
-      q += sizeof(uint);
-    }
-  return 1;
-  } 
+
+    for (i = p->pagenum; i < 1024; i++)
+      p->addr->addrs[i] = 0xffffffff;
+
+    return 0;
 }
 
 // decrease some sig counts in shmlist
