@@ -2,6 +2,8 @@
 #include "stat.h"
 #include "user.h"
 
+char buff[80][80];
+
 void runTaskMgr(void);
 int getCommand(char *buf);
 void procCommand(char *cmd);
@@ -62,9 +64,72 @@ printTaskMgrInfo(void)
 }
 
 void
-printString()
+printString(char *fmt, int line, ...) // 打印在第line行
 {
-
+  int c, digit, count, remain, currentDigit = 0; //目前輸出到第line行第currentDigit位
+  char *s;
+  memset(buff[line/80], 0, sizeof(char)*80);
+  uint *argp;
+  
+  if (fmt == 0)
+  {
+    printf(1, "null fmt\n");
+  }
+  
+  for(int i = 0; (c = fmt[i] & 0xff) != 0; i++)
+  {
+    if (currentDigit = 0)
+    {
+      goto bad;
+    }
+    if (c != '%')
+    {
+      if (c == '\n')
+      {
+        buff[line/80][currentDigit++] = 0;
+        currentDigit = 80;
+      }
+      else
+      {
+        buff[line/80][currentDigit++] = c;
+      }
+      continue;
+    }
+    c = fmt[++i] & 0xff;
+    if (c == 0)
+    {
+      break;
+    }
+    digit = 0;
+    while (c >= '0' && c <= '9')
+    {
+      digit = digit * 10 + c - '0';
+      c = fmt[++i] & 0xff;
+    }
+    if (currentDigit + digit > 80)
+    {
+      goto bad;
+    }
+    remain = (digit == 0) ? (80 - currentDigit) : digit;
+    
+    switch(c)
+    {
+      case 'd':
+        break;
+      case 'x':
+      case 'p':
+        break;
+      case 's':
+        break;
+      case '%':
+        break;
+      default:
+        break;
+    }
+    return;
+  }
+  bad:
+  
 }
 
 void
