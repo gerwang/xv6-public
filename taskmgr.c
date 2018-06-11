@@ -45,7 +45,14 @@ getCommand(char *buf)
 void
 procCommand(char *cmd)
 {
-  printf(1, cmd);
+  switch((*cmd) & 0xff){
+  case 'q':
+    closetaskmgr();
+    exit();
+    break;
+  default:
+    break;
+  }
 }
 
 int fork2(void)
@@ -188,5 +195,6 @@ printPageInfo()
 int
 main(void)
 {
+  inittaskmgr();
   runTaskMgr();
 }

@@ -90,14 +90,14 @@ sys_uptime(void)
   return xticks;
 }
 
-void
+int
 sys_inittaskmgr(void)
 {
-  inittaskmgr();
+  return inittaskmgr();
 }
 
-void
+int
 sys_closetaskmgr(void)
 {
-  closetaskmgr();
+  return closetaskmgr();
 }

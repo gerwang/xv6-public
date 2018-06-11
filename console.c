@@ -19,6 +19,8 @@ static void consputc(int);
 
 static int panicked = 0;
 
+static int runtaskmgr = 0;  //为0代表任务管理器没有在运行，为1代表任务管理器正在运行
+
 static struct {
   struct spinlock lock;
   int locking;
@@ -170,12 +172,13 @@ consputc(int c)
     for(;;)
       ;
   }
-
-  if(c == BACKSPACE){
-    uartputc('\b'); uartputc(' '); uartputc('\b');
-  } else
-    uartputc(c);
-  cgaputc(c);
+  if(runtaskmgr == 0){
+    if(c == BACKSPACE){
+      uartputc('\b'); uartputc(' '); uartputc('\b');
+    } else
+      uartputc(c);
+    cgaputc(c);
+  }
 }
 
 #define INPUT_BUF 128
@@ -186,6 +189,12 @@ struct {
   uint e;  // Edit index
 } input;
 
+// Some special keycodes
+#define KEY_UP 0xE2
+#define KEY_DN 0xE3
+#define KEY_LF 0xE4
+#define KEY_RT 0xE5
+
 #define C(x)  ((x)-'@')  // Control-x
 
 void
@@ -194,38 +203,56 @@ consoleintr(int (*getc)(void))
   int c, doprocdump = 0;
 
   acquire(&cons.lock);
-  while((c = getc()) >= 0){
-    switch(c){
-    case C('P'):  // Process listing.
-      // procdump() locks cons.lock indirectly; invoke later
-      doprocdump = 1;
-      break;
-    case C('U'):  // Kill line.
-      while(input.e != input.w &&
-            input.buf[(input.e-1) % INPUT_BUF] != '\n'){
-        input.e--;
-        consputc(BACKSPACE);
-      }
-      break;
-    case C('H'): case '\x7f':  // Backspace
-      if(input.e != input.w){
-        input.e--;
-        consputc(BACKSPACE);
-      }
-      break;
-    default:
-      if(c != 0 && input.e-input.r < INPUT_BUF){
-        c = (c == '\r') ? '\n' : c;
-        input.buf[input.e++ % INPUT_BUF] = c;
-        consputc(c);
-        if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
-          input.w = input.e;
-          wakeup(&input.r);
+  if(runtaskmgr == 0)
+    while((c = getc()) >= 0){
+      switch(c){
+      case C('P'):  // Process listing.
+        // procdump() locks cons.lock indirectly; invoke later
+        doprocdump = 1;
+        break;
+      case C('U'):  // Kill line.
+        while(input.e != input.w &&
+              input.buf[(input.e-1) % INPUT_BUF] != '\n'){
+          input.e--;
+          consputc(BACKSPACE);
         }
+        break;
+      case C('H'): case '\x7f':  // Backspace
+        if(input.e != input.w){
+          input.e--;
+          consputc(BACKSPACE);
+        }
+        break;
+      default:
+        if(c != 0 && input.e-input.r < INPUT_BUF){
+          c = (c == '\r') ? '\n' : c;
+          input.buf[input.e++ % INPUT_BUF] = c;
+          consputc(c);
+          if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
+            input.w = input.e;
+            wakeup(&input.r);
+          }
+        }
+        break;
       }
-      break;
     }
-  }
+  else
+    while((c = getc()) >= 0){
+      switch(c){
+      case KEY_UP:
+      case KEY_DN:
+      case KEY_LF:
+      case KEY_RT:
+      case 'k':
+      case 'q':
+        input.buf[input.e++ % INPUT_BUF] = c;
+        input.w = input.e;
+        wakeup(&input.r);
+        break;
+      default:
+        break;
+      }
+    }
   release(&cons.lock);
   if(doprocdump) {
     procdump();  // now call procdump() wo. cons.lock held
@@ -297,14 +324,79 @@ consoleinit(void)
   ioapicenable(IRQ_KBD, 0);
 }
 
-void
+//当任务管理器启动时，将当前控制台的pos、crt、input内的数据存入下列变量中
+//当任务管理器关闭时，将下列变量中的数据拷贝回pos、crt、input内
+static int posstore;
+static char crtstore[24 * 80];
+struct {
+  char buf[INPUT_BUF];
+  uint r;  // Read index
+  uint w;  // Write index
+  uint e;  // Edit index
+} inputstore;
+
+int
 inittaskmgr(void)
 {
+  int pos;
+  int i;
 
+  if(runtaskmgr == 0){
+    acquire(&cons.lock);
+
+    outb(CRTPORT, 14);
+    posstore = inb(CRTPORT+1) << 8;
+    outb(CRTPORT, 15);
+    posstore |= inb(CRTPORT+1);
+
+    pos = 25 * 80;  //使光标从屏幕上消失
+    outb(CRTPORT, 14);
+    outb(CRTPORT+1, pos>>8);
+    outb(CRTPORT, 15);
+    outb(CRTPORT+1, pos);
+
+    for(i = 0; i < 24 * 80; i++){
+      crtstore[i] = (crt[i] & 0xff); //将crt的值存入crtstore
+      crt[i] = '\0'; //清空屏幕
+    }
+  
+    for(i = 0; i < INPUT_BUF; i++)
+      inputstore.buf[i] = input.buf[i];
+    inputstore.r = input.r;
+    inputstore.w = input.w;
+    inputstore.e = input.e;
+    input.r = input.w = input.e = 0;
+
+    release(&cons.lock);
+    runtaskmgr = 1;
+    return 0;
+  }
+  else
+    return -1;
 }
 
-void
+int
 closetaskmgr(void)
 {
-  
+  int i;
+
+  if(runtaskmgr == 1){
+    acquire(&cons.lock);
+    outb(CRTPORT, 14);
+    outb(CRTPORT+1, posstore>>8);
+    outb(CRTPORT, 15);
+    outb(CRTPORT+1, posstore);
+    for(i = 0; i < 24 * 80; i++)
+      crt[i] = crtstore[i] | 0x700;
+    for(i = 0; i < INPUT_BUF; i++)
+      input.buf[i] = inputstore.buf[i];
+    input.r = inputstore.r;
+    input.w = inputstore.w;
+    input.e = inputstore.e;
+	  release(&cons.lock);
+    runtaskmgr = 0;
+    return 0;
+  }
+  else
+    return -1;
 }
