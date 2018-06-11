@@ -297,3 +297,14 @@ consoleinit(void)
   ioapicenable(IRQ_KBD, 0);
 }
 
+void
+inittaskmgr(void)
+{
+
+}
+
+void
+closetaskmgr(void)
+{
+  
+}

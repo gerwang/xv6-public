@@ -10,7 +10,7 @@ void procCommand(char *cmd);
 int fork2(void);
 
 void printTaskMgrInfo(void);
-void printString();
+void printString(char *fmt, int line, ...);
 void printPageInfo();
 int printint(int xx, int base, int sign, int pos, int limit, char *buff);
 
@@ -67,6 +67,7 @@ printTaskMgrInfo(void)
 void
 printString(char *fmt, int line, ...) // 打印在第line行
 {
+  /*
   int c, digitsDesired, digitsUsed, remain, currentDigit = 0; //目前輸出到第line行第currentDigit位
   char *s;
   memset(buff[line/80], 0, sizeof(char)*80);
@@ -168,13 +169,15 @@ printString(char *fmt, int line, ...) // 打印在第line行
     return;
   }
   bad:
-  
+  */
 }
 
+/*
 int printint(int xx, int base, int sign, int pos, int limit, char *buff)
 {
 
 }
+*/
 
 void
 printPageInfo()
@@ -182,8 +185,8 @@ printPageInfo()
 
 }
 
-int main(void)
+int
+main(void)
 {
   runTaskMgr();
-  return 0;
 }

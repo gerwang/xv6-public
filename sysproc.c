@@ -89,3 +89,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+void
+sys_inittaskmgr(void)
+{
+  inittaskmgr();
+}
+
+void
+sys_closetaskmgr(void)
+{
+  closetaskmgr();
+}
