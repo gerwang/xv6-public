@@ -532,3 +532,21 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+int getprocinfo(int *pid, char **name, int *state, uint *sz)
+{
+  struct proc p;
+  int i, j;
+
+  //将进程信息存入pid、name、state和sz中
+  for(i = 0; i < NPROC; i++)
+  {
+    p = ptable.proc[i];
+    pid[i] = p.pid;
+    for(j = 0; j < 16; j++)
+      name[i][j] = p.name[j];
+    state[i] = p.state;
+    sz[i] = p.sz;
+  }
+  return 0;
+}

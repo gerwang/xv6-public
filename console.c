@@ -400,3 +400,18 @@ closetaskmgr(void)
   else
     return -1;
 }
+
+int updscrcont(int pos, char *buf, int n)
+{
+  return 0;
+}
+
+int chgcurproc(int pos, int optr)
+{
+  return 0;
+}
+
+int chgcurpage(int pos, char *buf, int n, int optr)
+{
+  return 0;
+}

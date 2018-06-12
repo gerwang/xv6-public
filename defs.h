@@ -23,6 +23,9 @@ void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
 int             inittaskmgr(void);
 int             closetaskmgr(void);
+int             updscrcont(int, char*, int);
+int             chgcurproc(int, int);
+int             chgcurpage(int, char*, int, int);
 
 // exec.c
 int             exec(char*, char**);
@@ -122,6 +125,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             getprocinfo(int*, char**, int*, uint*);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
