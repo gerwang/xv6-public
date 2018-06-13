@@ -26,9 +26,7 @@ int uptime(void);
 int inittaskmgr(void);
 int closetaskmgr(void);
 int getprocinfo(int*, char**, int*, uint*);
-int updscrcont(int, char*, int);
-int chgcurproc(int, int);
-int chgcurpage(int, char*, int, int);
+int updscrcont(char*, int);
 
 // ulib.c
 int stat(char*, struct stat*);

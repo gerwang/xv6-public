@@ -533,7 +533,8 @@ procdump(void)
   }
 }
 
-int getprocinfo(int *pid, char **name, int *state, uint *sz)
+int
+getprocinfo(int *pid, char **name, int *state, uint *sz)
 {
   struct proc p;
   int i, j;

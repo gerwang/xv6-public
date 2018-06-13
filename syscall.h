@@ -24,5 +24,3 @@
 #define SYS_closetaskmgr 23
 #define SYS_getprocinfo  24
 #define SYS_updscrcont   25
-#define SYS_chgcurproc   26
-#define SYS_chgcurpage   27

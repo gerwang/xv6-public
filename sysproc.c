@@ -110,13 +110,10 @@ sys_getprocinfo(void)
   int *state;
   uint *sz;
 
-  if(argptr(0, (void*)&pid, 64*sizeof(int)) < 0)
-    return -1;
-  if(argptr(1, (void*)&name, 64*sizeof(char*)) < 0)
-    return -1;
-  if(argptr(2, (void*)&state, 64*sizeof(int)) < 0)
-    return -1;
-  if(argptr(3, (void*)&sz, 64*sizeof(uint)) < 0)
+  if(argptr(0, (void*)&pid, 64*sizeof(int)) < 0 ||
+     argptr(1, (void*)&name, 64*16*sizeof(char)) < 0 ||
+     argptr(2, (void*)&state, 64*sizeof(int)) < 0 ||
+     argptr(3, (void*)&sz, 64*sizeof(uint)) < 0)
     return -1;
   return getprocinfo(pid, name, state, sz);
 }
@@ -124,41 +121,10 @@ sys_getprocinfo(void)
 int
 sys_updscrcont(void)
 {
-  int pos, n;
   char *buf;
+  int curline;
 
-  if(argint(0, &pos) < 0)
+  if(argptr(0, &buf, 24 * 80) < 0 || argint(1, &curline))
     return -1;
-  if(argint(2, &n) < 0)
-    return -1;
-  if(argptr(1, &buf, n) < 0)
-    return -1;
-  return updscrcont(pos, buf, n);
-}
-
-int
-sys_chgcurproc(void)
-{
-  int pos, optr;
-
-  if(argint(0, &pos) < 0 || argint(1, &optr) < 0)
-    return -1;
-  return chgcurproc(pos, optr);
-}
-
-int
-sys_chgcurpage(void)
-{
-  int pos, n, optr;
-  char *buf;
-
-  if(argint(0, &pos) < 0)
-    return -1;
-  if(argint(2, &n) < 0)
-    return -1;
-  if(argptr(1, &buf, n) < 0)
-    return -1;
-  if(argint(3, &optr) < 0)
-    return -1;
-  return chgcurpage(pos, buf, n, optr);
+  return updscrcont(buf, curline);
 }

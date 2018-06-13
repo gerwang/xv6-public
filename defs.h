@@ -23,9 +23,7 @@ void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
 int             inittaskmgr(void);
 int             closetaskmgr(void);
-int             updscrcont(int, char*, int);
-int             chgcurproc(int, int);
-int             chgcurpage(int, char*, int, int);
+int             updscrcont(char*, int);
 
 // exec.c
 int             exec(char*, char**);

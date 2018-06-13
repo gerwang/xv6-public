@@ -327,7 +327,7 @@ consoleinit(void)
 //当任务管理器启动时，将当前控制台的pos、crt、input内的数据存入下列变量中
 //当任务管理器关闭时，将下列变量中的数据拷贝回pos、crt、input内
 static int posstore;
-static char crtstore[24 * 80];
+static char crtstore[24*80];
 struct {
   char buf[INPUT_BUF];
   uint r;  // Read index
@@ -349,13 +349,13 @@ inittaskmgr(void)
     outb(CRTPORT, 15);
     posstore |= inb(CRTPORT+1);
 
-    pos = 25 * 80;  //使光标从屏幕上消失
+    pos = 25*80;  //使光标从屏幕上消失
     outb(CRTPORT, 14);
     outb(CRTPORT+1, pos>>8);
     outb(CRTPORT, 15);
     outb(CRTPORT+1, pos);
 
-    for(i = 0; i < 24 * 80; i++){
+    for(i = 0; i < 24*80; i++){
       crtstore[i] = (crt[i] & 0xff); //将crt的值存入crtstore
       crt[i] = '\0'; //清空屏幕
     }
@@ -386,7 +386,7 @@ closetaskmgr(void)
     outb(CRTPORT+1, posstore>>8);
     outb(CRTPORT, 15);
     outb(CRTPORT+1, posstore);
-    for(i = 0; i < 24 * 80; i++)
+    for(i = 0; i < 24*80; i++)
       crt[i] = crtstore[i] | 0x700;
     for(i = 0; i < INPUT_BUF; i++)
       input.buf[i] = inputstore.buf[i];
@@ -401,17 +401,15 @@ closetaskmgr(void)
     return -1;
 }
 
-int updscrcont(int pos, char *buf, int n)
+int
+updscrcont(char *buf, int curline)
 {
-  return 0;
-}
+  int i;
 
-int chgcurproc(int pos, int optr)
-{
-  return 0;
-}
-
-int chgcurpage(int pos, char *buf, int n, int optr)
-{
+  for(i = 0; i < 24*80; i++)
+    if(i / 80 == curline)
+      crt[i] = (buf[i] & 0xff)| 0x900;
+    else
+      crt[i] = (buf[i] & 0xff)| 0x700;
   return 0;
 }
