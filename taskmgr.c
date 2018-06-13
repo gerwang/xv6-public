@@ -163,8 +163,8 @@ updateTaskMgrInfo(void)
       int localPartDigit = 0;
       do
       {
-        localBuff[localPartDigit++] = digits[procID[i] % 10];
-      } while((procID[i] /= 10) != 0 && localPartDigit < 10);
+        localBuff[localPartDigit++] = digits[procID[24*page + i] % 10];
+      } while((procID[24*page + i] /= 10) != 0 && localPartDigit < 10);
       while(localPartDigit > 0)
       {
         buff[24*page + (i+4)][curDigit++] = localBuff[--localPartDigit]; 
@@ -175,15 +175,15 @@ updateTaskMgrInfo(void)
       }
 
       localPartDigit = 0;
-      if(procName[i][0] == 0)
+      if(procName[24*page + i][0] == 0)
       {
         buff[24*page + (i+4)][curDigit++] = '0';
       }
       else
       {
-        while(procName[i][localPartDigit] && curDigit < 21)
+        while(procName[24*page + i][localPartDigit] && curDigit < 21)
         {
-          buff[24*page + (i+4)][curDigit++] = procName[i][localPartDigit++];
+          buff[24*page + (i+4)][curDigit++] = procName[24*page + i][localPartDigit++];
         }
       }
       while(curDigit < 22)
@@ -192,9 +192,9 @@ updateTaskMgrInfo(void)
       }
 
       localPartDigit = 0;
-      while(procstate[procState[i]][localPartDigit] != '\0' && curDigit < 32)
+      while(procstate[procState[24*page + i]][localPartDigit] != '\0' && curDigit < 32)
       {
-        buff[24*page + (i+4)][curDigit++] = procstate[procState[i]][localPartDigit++];
+        buff[24*page + (i+4)][curDigit++] = procstate[procState[24*page + i]][localPartDigit++];
       }
       while(curDigit < 33)
       {
@@ -204,8 +204,8 @@ updateTaskMgrInfo(void)
       localPartDigit = 0;
       do
       {
-        localBuff[localPartDigit++] = digits[procSize[i] % 10];
-      } while((procSize[i] /= 10) != 0 && localPartDigit < 10);
+        localBuff[localPartDigit++] = digits[procSize[24*page + i] % 10];
+      } while((procSize[24*page + i] /= 10) != 0 && localPartDigit < 10);
       while(localPartDigit > 0)
       {
         buff[24*page + (i+4)][curDigit++] = localBuff[--localPartDigit]; 
