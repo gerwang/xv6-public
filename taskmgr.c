@@ -22,7 +22,8 @@ void runTaskMgr(void);
 int getCmd(char *buf);
 void procCmd(char *cmd);
 //int fork2(void);
-void calsTaskMgrInfo(void);
+void initTaskMgrInfo();
+void updateTaskMgrInfo(void);
 //void printTaskMgrInfo(void);
 //void printString(char *fmt, int line, ...);
 //void printPageInfo();
@@ -34,8 +35,10 @@ runTaskMgr(void)
   static char buf[2];
   char *c;
 
-  calsTaskMgrInfo();
+  initTaskMgrInfo();
+  updateTaskMgrInfo();
   updscrcont(buff[curpage*24], curline);
+  
   while(getCmd(buf) >= 0)
   {
     /*
@@ -48,7 +51,7 @@ runTaskMgr(void)
     */
     c = buf;
     procCmd(c);
-    calsTaskMgrInfo();
+    updateTaskMgrInfo();
     updscrcont(buff[curpage*24], curline);
   }
 }
@@ -116,7 +119,37 @@ fork2(void)
 */
 
 void
-calsTaskMgrInfo(void)
+initTaskMgrInfo(void)
+{
+  char title1[] = "Task Maneger";
+  char title2[] = "pid        name       state      memory(bytes)";
+  char footNote[] = "page: ";
+  int curDigit;
+  for(int page = 0; page < 4; page++)
+  {
+    curDigit = 0;
+    for(char *s = title1; *s != '\0'; s++)
+    {
+      buff[24*page + 0][curDigit++] = *s;
+    }
+    curDigit = 0;
+    for(char *s = title2; *s != '\0'; s++)
+    {
+      buff[24*page + 1][curDigit++] = *s;
+    }
+    curDigit = 40;
+    for(char *s = footNote; *s != '\0'; s++)
+    {
+      buff[24*page + 23][curDigit++] = *s;
+    }
+    buff[24*page + 23][curDigit++] = page + '1';
+    buff[24*page + 23][curDigit++] = '/';
+    buff[24*page + 23][curDigit++] = '4';
+  }
+}
+
+void
+updateTaskMgrInfo(void)
 {
   int curDigit;
   char localBuff[10];
@@ -134,38 +167,38 @@ calsTaskMgrInfo(void)
       } while((procID[i] /= 10) != 0 && localPartDigit < 10);
       while(localPartDigit > 0)
       {
-        buff[i][curDigit++] = localBuff[--localPartDigit]; 
+        buff[24*page + (i+4)][curDigit++] = localBuff[--localPartDigit]; 
       }
       while(curDigit < 11)
       {
-        buff[i][curDigit++] = 0;
+        buff[24*page + (i+4)][curDigit++] = 0;
       }
 
       localPartDigit = 0;
       if(procName[i][0] == 0)
       {
-        buff[i][curDigit++] = '0';
+        buff[24*page + (i+4)][curDigit++] = '0';
       }
       else
       {
         while(procName[i][localPartDigit] && curDigit < 21)
         {
-          buff[i][curDigit++] = procName[i][localPartDigit++];
+          buff[24*page + (i+4)][curDigit++] = procName[i][localPartDigit++];
         }
       }
       while(curDigit < 22)
       {
-        buff[i][curDigit++] = 0;
+        buff[24*page + (i+4)][curDigit++] = 0;
       }
 
       localPartDigit = 0;
       while(procstate[procState[i]][localPartDigit] != '\0' && curDigit < 32)
       {
-        buff[i][curDigit++] = procstate[procState[i]][localPartDigit++];
+        buff[24*page + (i+4)][curDigit++] = procstate[procState[i]][localPartDigit++];
       }
       while(curDigit < 33)
       {
-        buff[i][curDigit++] = 0; 
+        buff[24*page + (i+4)][curDigit++] = 0; 
       }
 
       localPartDigit = 0;
@@ -175,18 +208,14 @@ calsTaskMgrInfo(void)
       } while((procSize[i] /= 10) != 0 && localPartDigit < 10);
       while(localPartDigit > 0)
       {
-        buff[i][curDigit++] = localBuff[--localPartDigit]; 
+        buff[24*page + (i+4)][curDigit++] = localBuff[--localPartDigit]; 
       }
       while(curDigit < 44)
       {
-        buff[i][curDigit++] = 0;
+        buff[24*page + (i+4)][curDigit++] = 0;
       }
-
-
     }
   }
-  
-
 }
 
 /*
