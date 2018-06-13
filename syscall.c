@@ -151,10 +151,7 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-// <<<<<<< memorymanager
 [SYS_nfpgs]   sys_nfpgs,
-// =======
-
 [SYS_setconsole]  sys_setconsole,
 [SYS_clearc]        sys_clearc,
 [SYS_insertc]       sys_insertc,
@@ -162,7 +159,6 @@ static int (*syscalls[])(void) = {
 [SYS_lseek]   sys_lseek,
 [SYS_gettimestamp]   sys_gettimestamp,
 [SYS_getcwd]    sys_getcwd
-// >>>>>>> final_shell
 };
 
 void
