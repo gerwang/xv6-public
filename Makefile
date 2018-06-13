@@ -1,6 +1,7 @@
 OBJS = \
 	bio.o\
 	console.o\
+	datetime.o\
 	exec.o\
 	file.o\
 	fs.o\
@@ -26,6 +27,8 @@ OBJS = \
 	trap.o\
 	uart.o\
 	vectors.o\
+	var_in_kernel.o\
+	sysconsole.o\
 	vm.o\
 
 # Cross-compiling (e.g., on Mac OS X)
@@ -174,6 +177,21 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
+	_find\
+	_bi\
+	_vim\
+	_mv\
+	_touch\
+	_cp\
+	_head\
+	_tail\
+	_splice\
+	_history\
+	_shutdown\
+	_login\
+	_more\
+	_date\
+	_pwd\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -243,7 +261,8 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
-	printf.c umalloc.c\
+	printf.c umalloc.c mv.c touch.c cp.c head.c tail.c splice.c\
+	history.c shutdown.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

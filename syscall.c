@@ -104,6 +104,14 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 
+extern int sys_setconsole(void);
+extern int sys_clearc(void);
+extern int sys_insertc(void);
+extern int sys_shutdown(void);
+extern int sys_lseek(void);
+extern int sys_gettimestamp(void);
+extern int sys_getcwd(void);
+
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
@@ -126,6 +134,14 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+
+[SYS_setconsole]  sys_setconsole,
+[SYS_clearc]        sys_clearc,
+[SYS_insertc]       sys_insertc,
+[SYS_shutdown]    sys_shutdown,
+[SYS_lseek]   sys_lseek,
+[SYS_gettimestamp]   sys_gettimestamp,
+[SYS_getcwd]    sys_getcwd
 };
 
 void
