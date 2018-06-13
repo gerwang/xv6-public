@@ -31,7 +31,7 @@ void calsTaskMgrInfo(void);
 void
 runTaskMgr(void)
 {
-  char buf[2];
+  static char buf[2];
   char *c;
 
   calsTaskMgrInfo();
@@ -118,11 +118,75 @@ fork2(void)
 void
 calsTaskMgrInfo(void)
 {
-  int i, j;
+  int curDigit;
+  char localBuff[10];
+  static char digits[] = "0123456789";
   getprocinfo(procID, procName, procState, procSize);
-  for(i = 0; i < 96; i++)
-    for(j = 0; j < 80; j++)
-      buff[i][j] = '1';
+  for(int page = 0; page < 4; page++)
+  {
+    for(int i = 0; i < 16; i++)
+    {
+      curDigit = 0;
+      int localPartDigit = 0;
+      do
+      {
+        localBuff[localPartDigit++] = digits[procID[i] % 10];
+      } while((procID[i] /= 10) != 0 && localPartDigit < 10);
+      while(localPartDigit > 0)
+      {
+        buff[i][curDigit++] = localBuff[--localPartDigit]; 
+      }
+      while(curDigit < 11)
+      {
+        buff[i][curDigit++] = 0;
+      }
+
+      localPartDigit = 0;
+      if(procName[i][0] == 0)
+      {
+        buff[i][curDigit++] = '0';
+      }
+      else
+      {
+        while(procName[i][localPartDigit] && curDigit < 21)
+        {
+          buff[i][curDigit++] = procName[i][localPartDigit++];
+        }
+      }
+      while(curDigit < 22)
+      {
+        buff[i][curDigit++] = 0;
+      }
+
+      localPartDigit = 0;
+      while(procstate[procState[i]][localPartDigit] != '\0' && curDigit < 32)
+      {
+        buff[i][curDigit++] = procstate[procState[i]][localPartDigit++];
+      }
+      while(curDigit < 33)
+      {
+        buff[i][curDigit++] = 0; 
+      }
+
+      localPartDigit = 0;
+      do
+      {
+        localBuff[localPartDigit++] = digits[procSize[i] % 10];
+      } while((procSize[i] /= 10) != 0 && localPartDigit < 10);
+      while(localPartDigit > 0)
+      {
+        buff[i][curDigit++] = localBuff[--localPartDigit]; 
+      }
+      while(curDigit < 44)
+      {
+        buff[i][curDigit++] = 0;
+      }
+
+
+    }
+  }
+  
+
 }
 
 /*
