@@ -12,7 +12,7 @@ const char procstate[6][9] = {"UNUSED", "EMBRYO", "SLEEPING", "RUNNABLE", "RUNNI
 
 char buff[96][80];
 int curline = 4;  //表示当前高亮显示的行序号，范围4-19
-int curpage = 1;  //表示当前页码，范围1-4
+int curpage = 0;  //表示当前页码，范围0-3
 int procID[NPROC];
 char procName[NPROC][16];
 int procState[NPROC];
@@ -31,9 +31,11 @@ void calsTaskMgrInfo(void);
 void
 runTaskMgr(void)
 {
-  static char buf[2];
+  char buf[2];
   char *c;
 
+  calsTaskMgrInfo();
+  updscrcont(buff[curpage*24], curline);
   while(getCmd(buf) >= 0)
   {
     /*
@@ -47,7 +49,7 @@ runTaskMgr(void)
     c = buf;
     procCmd(c);
     calsTaskMgrInfo();
-    updscrcont(buff[(curpage-1)*24], curline);
+    updscrcont(buff[curpage*24], curline);
   }
 }
 
@@ -74,21 +76,21 @@ procCmd(char *cmd)
       curline++;
     break;
   case KEY_LF:
-    if(curpage > 1)
+    if(curpage > 0)
       curpage--;
     break;
   case KEY_RT:
-    if(curpage < 4)
+    if(curpage < 3)
       curpage++;
     break;
   case 'k':
-    if(strcmp("taskmgr", procName[(curpage-1)*16+(curline-4)]) == 0){
+    if(strcmp("taskmgr", procName[curpage*16+curline-4]) == 0){
       closetaskmgr();
       exit();
       break;
     }
     else{
-      kill(procID[(curpage-1)*16+(curline-4)]);
+      kill(procID[curpage*16+curline-4]);
       break;
     }
   case 'q':
@@ -116,7 +118,11 @@ fork2(void)
 void
 calsTaskMgrInfo(void)
 {
-  getprocinfo(procID, (char **)procName, procState, procSize);
+  int i, j;
+  getprocinfo(procID, procName, procState, procSize);
+  for(i = 0; i < 96; i++)
+    for(j = 0; j < 80; j++)
+      buff[i][j] = '1';
 }
 
 /*

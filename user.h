@@ -25,7 +25,7 @@ int sleep(int);
 int uptime(void);
 int inittaskmgr(void);
 int closetaskmgr(void);
-int getprocinfo(int*, char**, int*, uint*);
+int getprocinfo(int*, char(*)[16], int*, uint*);
 int updscrcont(char*, int);
 
 // ulib.c

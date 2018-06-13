@@ -123,7 +123,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
-int             getprocinfo(int*, char**, int*, uint*);
+int             getprocinfo(int*, char(*)[16], int*, uint*);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

@@ -106,7 +106,7 @@ int
 sys_getprocinfo(void)
 {
   int *pid;
-  char **name;
+  char (*name)[16];
   int *state;
   uint *sz;
 
