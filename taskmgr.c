@@ -161,10 +161,17 @@ updateTaskMgrInfo(void)
     {
       curDigit = 0;
       int localPartDigit = 0;
-      do
+      if (procID[24*page + i] < 0)
       {
-        localBuff[localPartDigit++] = digits[procID[24*page + i] % 10];
-      } while((procID[24*page + i] /= 10) != 0 && localPartDigit < 10);
+          buff[24*page + (i+4)][curDigit++] = 0;
+      }
+      else
+      {
+        do
+        {
+          localBuff[localPartDigit++] = digits[procID[24*page + i] % 10];
+        } while((procID[24*page + i] /= 10) != 0 && localPartDigit < 10);
+      }
       while(localPartDigit > 0)
       {
         buff[24*page + (i+4)][curDigit++] = localBuff[--localPartDigit]; 
@@ -191,7 +198,7 @@ updateTaskMgrInfo(void)
         buff[24*page + (i+4)][curDigit++] = 0;
       }
 
-      localPartDigit = 0;
+      localPartDigi t = 0;
       while(procstate[procState[24*page + i]][localPartDigit] != '\0' && curDigit < 32)
       {
         buff[24*page + (i+4)][curDigit++] = procstate[procState[24*page + i]][localPartDigit++];
