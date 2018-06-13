@@ -178,13 +178,11 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
-# <<<<<<< memorymanager
 	_cowtest\
 	_lalloctest\
 	_npptest\
 	_sagtest\
 	_pgswptest\
-# =======
 	_find\
 	_bi\
 	_vim\
@@ -200,7 +198,6 @@ UPROGS=\
 	_more\
 	_date\
 	_pwd\
-# >>>>>>> final_shell
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
