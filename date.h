@@ -6,3 +6,5 @@ typedef struct rtcdate {
   uint month;
   uint year;
 }rtcdate;
+
+uint dateToTimestamp(rtcdate * date);

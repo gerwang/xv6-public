@@ -109,6 +109,8 @@ extern int sys_clearc(void);
 extern int sys_insertc(void);
 extern int sys_shutdown(void);
 extern int sys_lseek(void);
+extern int sys_gettimestamp(void);
+extern int sys_getcwd(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -138,6 +140,8 @@ static int (*syscalls[])(void) = {
 [SYS_insertc]       sys_insertc,
 [SYS_shutdown]    sys_shutdown,
 [SYS_lseek]   sys_lseek,
+[SYS_gettimestamp]   sys_gettimestamp,
+[SYS_getcwd]    sys_getcwd
 };
 
 void

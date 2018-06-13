@@ -137,7 +137,9 @@ typedef enum
     key_else,       
     key_endif,   
     key_list,
-    key_goto    
+    key_goto,
+    key_while,// 5.22 new
+    key_wend //5.22 new   
 }keywords;
 
 struct 
@@ -148,6 +150,15 @@ struct
     int step;        
 }stack_for[MEMORY_SIZE];  
 int top_for = -1;
+
+struct
+{
+    int id;
+    int ln;
+    int target;
+    int sign;
+}stack_while[MEMORY_SIZE];
+int top_while = -1;
 
 // load
 #define PROGRAM_SIZE 1000  
@@ -186,6 +197,8 @@ void exec_let(STRING);
 void exec_null(STRING);
 void exec_list(STRING);
 void exec_goto(STRING);
+void exec_while(STRING);//5.22 new
+void exec_wend(STRING);//5.22 new
 
 // load
 int isspace(char);
@@ -787,6 +800,14 @@ yacc(STRING line)
     {
         return key_goto;
     }
+    else if(!stricmp(line, "WHILE ", 6))
+    {
+        return key_while;
+    }
+    else if(!stricmp(line, "WEND", 4))
+    {
+        return key_wend;
+    }
     else if(*line == '\0')
     {
         return key_null;
@@ -999,6 +1020,121 @@ exec_endfor(STRING line)
     }
 }
 
+void
+exec_while(STRING line)
+{
+    STRING sl;
+    int top;
+    char* s;
+    int sign;
+
+    strcpy(sl,line);
+    s = sl;
+    top = top_while + 1;
+    s += 6;
+
+    if(top >= MEMORY_SIZE)
+    {
+        printf(1,"error:while\n");
+        exit();
+    }
+
+    while(*s && isspace(*s)) s++;
+    if(isalpha(*s) && !isalnum(s[1]))
+    {
+        stack_while[top].id = toupper(*s) - 'A';
+        stack_while[top].ln = cp;
+        s++;
+    }
+    else
+    {
+        printf(1,"grammar error:while\n");
+        exit();
+    }
+    while(*s && isspace(*s)) s++;
+    //check comparison character
+    switch(*s)
+    {
+        case '=' : sign = -1; s++; break;
+        case '>' : sign = 1; s++; break;
+        case '<' : sign = 2; s++; break;
+        default : printf(1,"grammar error:while\n");exit();break;
+    }
+    if(*s == '=')
+    {
+        if(sign == -1) sign = 0;// ==
+        if(sign == 1)  sign = 3;// >=
+        if(sign == 2)   sign = 4;// <=
+        s++;
+    }
+    else if(*s == ' ')
+    {
+        ;
+    }
+    else
+    {
+        printf(1,"grammar error:while\n");
+        exit();
+    }
+
+    if(sign < 0)
+    {
+        printf(1,"grammar error:while\n");
+        exit();
+    }
+    stack_while[top].sign = sign;
+    //printf(2,"%d",stack_while[top].sign);//debug
+    // get the right value
+    while(*s && isspace(*s)) s++;
+    //how to grab the maining of the right thing
+    stack_while[top].target = eval(s).i;
+   // printf(2,"%d",stack_while[top].target);//debug
+    if((sign == 0 && memory[stack_while[top].id].i != stack_while[top].target)||
+       (sign == 1 && memory[stack_while[top].id].i <= stack_while[top].target)||
+       (sign == 2 && memory[stack_while[top].id].i >= stack_while[top].target)||
+       (sign == 3 && memory[stack_while[top].id].i < stack_while[top].target)||
+       (sign == 4 && memory[stack_while[top].id].i > stack_while[top].target))
+    {
+        while(yacc(code[cp].line) != key_wend)
+        {
+            cp++;
+        }
+        return;
+    }
+    else
+    {
+        top_while++;
+    }
+}
+
+void
+exec_wend(STRING line)
+{
+    if(strcmp(line,"WEND"))
+    {
+        printf(1,"grammar error:wend\n");
+        exit();
+    }
+    if(top_while < 0)
+    {
+        printf(1,"grammar error:wend\n");
+    }
+    //consider  < or > relevant to different situation
+    //break loop   
+    if((stack_while[top_while].sign == 0 && memory[stack_while[top_while].id].i != stack_while[top_while].target)||
+        (stack_while[top_while].sign == 1 && memory[stack_while[top_while].id].i <= stack_while[top_while].target)||
+        (stack_while[top_while].sign == 2 && memory[stack_while[top_while].id].i >= stack_while[top_while].target)||
+        (stack_while[top_while].sign == 3 && memory[stack_while[top_while].id].i < stack_while[top_while].target)||
+        (stack_while[top_while].sign == 4 && memory[stack_while[top_while].id].i > stack_while[top_while].target))
+    {
+        top_while--;
+    }
+    //continue loop
+    else
+    {
+        cp = stack_while[top_while].ln;
+    }
+}
 void 
 exec_if(STRING line)
 {
@@ -1361,7 +1497,9 @@ main(int argc, char *argv[])
 		exec_else,
 		exec_endif,
         exec_list,
-        exec_goto
+        exec_goto,
+        exec_while,
+        exec_wend
 	};
 	if(argc < 2)
     {
