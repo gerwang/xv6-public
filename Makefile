@@ -1,6 +1,7 @@
 OBJS = \
 	bio.o\
 	console.o\
+	datetime.o\
 	exec.o\
 	file.o\
 	fs.o\
@@ -26,6 +27,8 @@ OBJS = \
 	trap.o\
 	uart.o\
 	vectors.o\
+	var_in_kernel.o\
+	sysconsole.o\
 	vm.o\
 
 # Cross-compiling (e.g., on Mac OS X)
@@ -76,8 +79,13 @@ AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
+# <<<<<<< memorymanager
 # CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
-CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O0 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
+# CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O0 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
+# =======
+# CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer -std=gnu11
+# >>>>>>> final_shell
+CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O0 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer -std=gnu11
 #CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -fvar-tracking -fvar-tracking-assignments -O0 -g -Wall -MD -gdwarf-2 -m32 -Werror -fno-omit-frame-pointer
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
@@ -176,11 +184,29 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
+# <<<<<<< memorymanager
 	_cowtest\
 	_lalloctest\
 	_npptest\
 	_sagtest\
 	_pgswptest\
+# =======
+	_find\
+	_bi\
+	_vim\
+	_mv\
+	_touch\
+	_cp\
+	_head\
+	_tail\
+	_splice\
+	_history\
+	_shutdown\
+	_login\
+	_more\
+	_date\
+	_pwd\
+# >>>>>>> final_shell
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -250,8 +276,13 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
+# <<<<<<< memorymanager
 	printf.c umalloc.c cowtest.c lalloctest.c npptest.c sagtest.c\
 	pgswptest.c\
+# =======
+	printf.c umalloc.c mv.c touch.c cp.c head.c tail.c splice.c\
+	history.c shutdown.c\
+# >>>>>>> final_shell
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

@@ -20,4 +20,16 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
+// <<<<<<< memorymanager
 #define SYS_nfpgs  32
+// =======
+
+#define SYS_clearc      23
+#define SYS_insertc     24
+#define SYS_setconsole  25
+#define SYS_shutdown    26
+#define SYS_lseek  	27
+#define SYS_gettimestamp 28
+#define SYS_getcwd  29
+
+// >>>>>>> final_shell

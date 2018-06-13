@@ -29,4 +29,15 @@ SYSCALL(getpid)
 SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
+# <<<<<<< memorymanager
 SYSCALL(nfpgs)
+# =======
+
+SYSCALL(setconsole)
+SYSCALL(clearc)
+SYSCALL(insertc)
+SYSCALL(shutdown)
+SYSCALL(lseek)
+SYSCALL(gettimestamp)
+SYSCALL(getcwd)
+# >>>>>>> final_shell
