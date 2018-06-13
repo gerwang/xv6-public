@@ -47,12 +47,19 @@ sys_sbrk(void)
 {
   int addr;
   int n;
+  struct proc* curproc = myproc();
 
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
-  if(growproc(n) < 0)
+  addr = curproc->sz;
+  if (n < 0 && growproc(n) < 0)
     return -1;
+
+  // Avoid heap grows higher than stack.
+  if (curproc->sz + n > USERTOP - curproc->stack_size - PGSIZE)
+    return -1;
+
+  curproc->sz += n;
   return addr;
 }
 
@@ -90,6 +97,13 @@ sys_uptime(void)
   return xticks;
 }
 
+// <<<<<<< memorymanager
+
+int sys_nfpgs(void)
+{
+  return get_num_free_pages();
+}
+// =======
 // Halt (shutdown) the system by sending a special signal to QEMU.
 // Based on: https://github.com/noah-mcaulay/XV6-Operating-System/blob/master/sysproc.c
 int
@@ -127,3 +141,4 @@ sys_gettimestamp(void)
   return ret;
 }
 
+// >>>>>>> final_shell

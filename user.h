@@ -23,6 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int nfpgs(void);
 
 int setconsole(int, int, int, int, int);
 void clearc(void);
