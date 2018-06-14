@@ -57,6 +57,7 @@ int main()
         exit();
     }
 
+    printf(1, "[P] Forking child...\n");
     if (fork() == 0) // This is child.
     {
         char *read = malloc(16000);
