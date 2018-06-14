@@ -501,7 +501,8 @@ exit(void)
   // Remove all sigs
   for(int i = 0;i < MAX_SIG_PER_PROC;i++)
   {
-    deleteshm(curproc->sig_permit[i]);
+    if(curproc->sig_permit[i] != 0)
+      deleteshm(curproc->sig_permit[i]);
   }
 
   if(curproc == initproc)
