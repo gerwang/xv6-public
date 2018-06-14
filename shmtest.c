@@ -70,7 +70,7 @@ int main()
             exit();
         }
         read[30] = '\0';
-        printf(1, "[C] First 15 characters received by child in sig %d: \n", sig);
+        printf(1, "[C] First 30 characters received by child in sig %d: \n", sig);
         printf(1, "[C] %s", read);
         printf(1, "\n");
         printf(1, "[C] Full string received by child from parent in sig %d: \n", sig2);
