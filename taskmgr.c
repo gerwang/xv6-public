@@ -23,7 +23,6 @@ uint procSize[NPROC];
 void runTaskMgr(void);
 int getCmd(char *buf);
 void procCmd(char *cmd);
-//int fork2(void);
 void initTaskMgrInfo(void);
 void clearTaskMgrInfo(void);
 void updTaskMgrInfo(void);
@@ -31,25 +30,13 @@ void updTaskMgrInfo(void);
 void
 runTaskMgr(void)
 {
-  static char buf[2];
-  char *c;
+  char buf[2];
 
   initTaskMgrInfo();
   updTaskMgrInfo();
   updscrcont(scrbuff[curpage*24], curline);
-  
-  while(getCmd(buf) >= 0)
-  {
-    /*
-    if(fork2() == 0)
-    {
-      c = buf;
-      procCommand(c);
-    }
-    sleep(1);
-    */
-    c = buf;
-    procCmd(c);
+  while(getCmd(buf) >= 0){
+    procCmd(buf);
     updTaskMgrInfo();
     updscrcont(scrbuff[curpage*24], curline);
   }
@@ -99,23 +86,12 @@ procCmd(char *cmd)
     closetaskmgr();
     exit();
     break;
+  case 'f':
+    break;
   default:
     break;
   }
 }
-
-/*
-int
-fork2(void)
-{
-  int pid;
-
-  pid = fork();
-  if(pid == -1)
-    exit();
-  return pid;
-}
-*/
 
 void
 initTaskMgrInfo(void)

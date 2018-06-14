@@ -245,6 +245,7 @@ consoleintr(int (*getc)(void))
       case KEY_RT:
       case 'k':
       case 'q':
+      case 'f':
         input.buf[input.e++ % INPUT_BUF] = c;
         input.w = input.e;
         wakeup(&input.r);
