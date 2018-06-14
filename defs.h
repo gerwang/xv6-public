@@ -191,7 +191,6 @@ void            uartintr(void);
 void            uartputc(int);
 
 // vm.c
-extern struct shmnode shmlist[256];
 void            seginit(void);
 void            kvmalloc(void);
 pde_t*          setupkvm(void);

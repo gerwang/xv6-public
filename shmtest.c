@@ -36,9 +36,9 @@ int main()
 {
     printf(1, "================================\n");
     printf(1, "Memory sharing test started.\n");
-
-    if (createshm(sig,16000) == 0)
-        printf(1, "[P] Share memory created.\n");
+    int r;
+    if((r=createshm(sig,16000)) >= 0)
+        printf(1, "[P] Share memory created.\n%d\n",r);
     else
     {
         printf(1, "[P] Share memory creating failed.\n");

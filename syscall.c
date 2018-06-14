@@ -148,6 +148,10 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_nfpgs]   sys_nfpgs,
+[SYS_createshm] sys_createshm,
+[SYS_deleteshm] sys_deleteshm,
+[SYS_readshm] sys_readshm,
+[SYS_writeshm] sys_writeshm
 };
 
 void

@@ -132,14 +132,14 @@ int
 sys_writeshm(void)
 {
   int sig;
-  char** str;
+  char* str;
   int num;
   int offset;
   if(argint(0, &sig) < 0 || argstr(1, &str) < 0 || argint(2, &num) < 0 || argint(3, &offset) < 0)
   {
     return 0;
   }
-  return writeshm(sig, *str, num, offset);
+  return writeshm(sig, str, num, offset);
 }
 
 // return the number of characters actually read from shmpages
@@ -147,12 +147,12 @@ int
 sys_readshm(void)
 {
   int sig;
-  char** str;
+  char* str;
   int num;
   int offset;
-  if(argint(0, &sig) < 0 || argstr(1, str) < 0 || argint(2, &num) < 0 || argint(3 ,&offset) < 0)
+  if(argint(0, &sig) < 0 || argstr(1, &str) < 0 || argint(2, &num) < 0 || argint(3 ,&offset) < 0)
   {
     return 0;
   }
-  return readshm(sig, *str, num, offset);
+  return readshm(sig, str, num, offset);
 }

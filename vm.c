@@ -8,6 +8,7 @@
 #include "elf.h"
 #include "traps.h"
 #include "debugsw.h"
+#include "spinlock.h"
 
 #define SWAP_BUF_SIZE (PGSIZE / 4)    // Buffer size when swap.
 
@@ -963,7 +964,7 @@ int createshm(uint sig, uint bytes)
       int target = PGROUNDUP(bytes) / PGSIZE;
       for (int j = shmlist[i].pagenum; j < target; j++)
       {
-        if (shmlist[i].addr->addrs[j] = kalloc() == 0)
+        if ((shmlist[i].addr->addrs[j] =(char*)kalloc()) == 0)
         {
           release(&kshmlock);
           return -1;
@@ -993,7 +994,7 @@ int createshm(uint sig, uint bytes)
     }
 
     for (i = shmlist[pos].pagenum; i < 1024; i++)
-      shmlist[pos].addr->addrs[i] = 0xffffffff;
+      shmlist[pos].addr->addrs[i] =(char*) 0xffffffff;
     release(&kshmlock);
     return 0;
   }
@@ -1043,7 +1044,7 @@ int deleteshm(uint sig)
     {
       kfree(shmlist[i].addr->addrs[i]);
     }
-    kree((char *)shmlist[i].addr);
+    kfree((char *)shmlist[i].addr);
   }
   release(&kshmlock);
   return 1;
