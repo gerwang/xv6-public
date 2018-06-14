@@ -1,7 +1,7 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
-char *content="ad from the start, eventually winning by a considerable margin to record their second consecutive victory, and taking the overall record in the Women's Boat Race to 43–30 in their favour. The men's race was the final event of the day and completed a whitewash as Cambridge won, their second victory in three years, and taking the overall record to 83–80 in their favour. The races were watched by around a quarter of a million spectators live, and were broadcast around the world by a variety of broadcasters. The two main races were also available for the second time as a live stream using YouTube.\
+char *content = "ad from the start, eventually winning by a considerable margin to record their second consecutive victory, and taking the overall record in the Women's Boat Race to 43–30 in their favour. The men's race was the final event of the day and completed a whitewash as Cambridge won, their second victory in three years, and taking the overall record to 83–80 in their favour. The races were watched by around a quarter of a million spectators live, and were broadcast around the world by a variety of broadcasters. The two main races were also available for the second time as a live stream using YouTube.\
 In the Rhine Campaign of 1796 (nominated by auntieruth) ), two First Coalition armies under the overall command of Archduke Charles outmaneuvered and defeated two French Republican armies. This was the last campaign of the War of the First Coalition, part of the French Revolutionary Wars.\
 The Flora of Madagascar (nominated by Tylototriton) consists of more than 12,000 species of vascular and non-vascular plants and a poorly known number of fungi. Around 83% of Madagascar's vascular plants are only found on the island. These endemics include five plant families, 85% of the over 900 orchid species, around 200 species of palms, and such emblematic species as the traveller's tree, six species of baobab and the Madagascar periwinkle. The high degree of endemism is due to Madagascar's long isolation since its separation from the African and Indian landmasses in the Mesozoic, 150–160 and 84–91 million years ago, respectively. However, few plant lineages remain from the ancient Gondwanan flora; most extant plant groups immigrated via across-ocean dispersal well after continental break-up.\
 John Mowbray, 3rd Duke of Norfolk (nominated by Serial Number 54129) was a fifteenth-century English magnate who, despite having a relatively short political career, played a significant role in the early years of the Wars of the Roses.\
@@ -37,21 +37,15 @@ int main()
     printf(1, "================================\n");
     printf(1, "Memory sharing test started.\n");
     int r;
-    if((r=createshm(sig,16000)) >= 0)
-        printf(1, "[P] Share memory created.\n%d\n",r);
+    if ((r = createshm(sig, 16000)) >= 0)
+        printf(1, "[P] Share memory created.\n%d\n", r);
     else
     {
         printf(1, "[P] Share memory creating failed.\n");
         exit();
     }
-   /* char* content = malloc(7000);
-    char *content1 = "Hello child proc, I'm your father!";
-    for(int q=0;q<20;q++)
-    {
-        strcpy(content+q*35,content1);
-    }*/
     printf(1, "[P] Writing message to child...\n");
-    if (writeshm(sig, content, 15475, 1) == -1)
+    if (writeshm(sig, content, 15476, 1) == -1)
     {
         printf(1, "Error!\n");
         exit();
@@ -61,45 +55,20 @@ int main()
     if (fork() == 0) // This is child.
     {
         char *read = malloc(16000);
-        createshm(sig,0);
+        createshm(sig, 0);
         if (readshm(sig, read, 15475, 1) == -1)
         {
             printf(1, "Error!\n");
             free(read);
             exit();
         }
-        read[10]='\0';
-        printf(1,read);
-        /*printf(1, "[C] Recv: %s\n", read);
-        char *write = "Hello parent proc, I'm your child!";
-        printf(1, "[C] Writing message to parent...\n");
-        if (writeshm(sig, write) != 0)
-        {
-            printf(1, "Error!\n");
-            free(read);
-            exit();
-        }
-        free(read);
-        printf(1, "Child start sleeping\n");
-        sleep(100);*/
+        read[10] = '\0';
+        printf(1, "[C] First 10 characters: \n");
+        printf(1, read);
         exit();
     }
     else // This is parent.
-    {
-        /*printf(1, "Parent start sleeping\n");
-        sleep(100);
-        char *read = malloc(16000);
-        if (createshm(sig, 16000) != 0)
-        {
-            printf(1, "Error!\n");
-            free(read);
-            exit();
-        }
-        readshm(sig,read,15475,1);
-        printf(1, "[P] Recv: %s\n", read);
-        free(read);*/
         wait();
-    }
 
     if (deleteshm(sig) >= 0)
         printf(1, "[P] Share memory removed.\n");
