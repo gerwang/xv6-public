@@ -89,3 +89,42 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_inittaskmgr(void)
+{
+  return inittaskmgr();
+}
+
+int
+sys_closetaskmgr(void)
+{
+  return closetaskmgr();
+}
+
+int
+sys_getprocinfo(void)
+{
+  int *pid;
+  char (*name)[16];
+  int *state;
+  uint *sz;
+
+  if(argptr(0, (void*)&pid, 64*sizeof(int)) < 0 ||
+     argptr(1, (void*)&name, 64*16*sizeof(char)) < 0 ||
+     argptr(2, (void*)&state, 64*sizeof(int)) < 0 ||
+     argptr(3, (void*)&sz, 64*sizeof(uint)) < 0)
+    return -1;
+  return getprocinfo(pid, name, state, sz);
+}
+
+int
+sys_updscrcont(void)
+{
+  char *buf;
+  int curline;
+
+  if(argptr(0, &buf, 24 * 80) < 0 || argint(1, &curline))
+    return -1;
+  return updscrcont(buf, curline);
+}

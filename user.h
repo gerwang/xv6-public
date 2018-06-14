@@ -23,6 +23,10 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int inittaskmgr(void);
+int closetaskmgr(void);
+int getprocinfo(int*, char(*)[16], int*, uint*);
+int updscrcont(char*, int);
 
 // ulib.c
 int stat(char*, struct stat*);

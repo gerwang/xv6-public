@@ -21,6 +21,9 @@ void            consoleinit(void);
 void            cprintf(char*, ...);
 void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
+int             inittaskmgr(void);
+int             closetaskmgr(void);
+int             updscrcont(char*, int);
 
 // exec.c
 int             exec(char*, char**);
@@ -120,6 +123,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             getprocinfo(int*, char(*)[16], int*, uint*);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
