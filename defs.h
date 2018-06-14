@@ -10,6 +10,8 @@ struct sleeplock;
 struct stat;
 struct superblock;
 
+struct shmnode;
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -205,6 +207,11 @@ int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 void            pagefault(uint err_code);
 void            swappage(uint);
+void            initshm(void);
+int             createshm(uint sig, uint bytes);
+int             deleteshm(uint sig);
+int             readshm(uint sig, char* rstr, uint num, uint offset);
+int             writeshm(uint sig, char* wstr, uint num, uint offset);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
