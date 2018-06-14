@@ -1,7 +1,10 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
-char *content = "ad from the start, eventually winning by a considerable margin to record their second consecutive victory, and taking the overall record in the Women's Boat Race to 43–30 in their favour. The men's race was the final event of the day and completed a whitewash as Cambridge won, their second victory in three years, and taking the overall record to 83–80 in their favour. The races were watched by around a quarter of a million spectators live, and were broadcast around the world by a variety of broadcasters. The two main races were also available for the second time as a live stream using YouTube.\
+int number = 123456;
+char *hello = "hello m";
+char *child = "y child!";
+char *content = "0123456789this is content from offset 10,art, eventually winning by a considerable margin to record their second consecutive victory, and taking the overall record in the Women's Boat Race to 43–30 in their favour. The men's race was the final event of the day and completed a whitewash as Cambridge won, their second victory in three years, and taking the overall record to 83–80 in their favour. The races were watched by around a quarter of a million spectators live, and were broadcast around the world by a variety of broadcasters. The two main races were also available for the second time as a live stream using YouTube.\
 In the Rhine Campaign of 1796 (nominated by auntieruth) ), two First Coalition armies under the overall command of Archduke Charles outmaneuvered and defeated two French Republican armies. This was the last campaign of the War of the First Coalition, part of the French Revolutionary Wars.\
 The Flora of Madagascar (nominated by Tylototriton) consists of more than 12,000 species of vascular and non-vascular plants and a poorly known number of fungi. Around 83% of Madagascar's vascular plants are only found on the island. These endemics include five plant families, 85% of the over 900 orchid species, around 200 species of palms, and such emblematic species as the traveller's tree, six species of baobab and the Madagascar periwinkle. The high degree of endemism is due to Madagascar's long isolation since its separation from the African and Indian landmasses in the Mesozoic, 150–160 and 84–91 million years ago, respectively. However, few plant lineages remain from the ancient Gondwanan flora; most extant plant groups immigrated via across-ocean dispersal well after continental break-up.\
 John Mowbray, 3rd Duke of Norfolk (nominated by Serial Number 54129) was a fifteenth-century English magnate who, despite having a relatively short political career, played a significant role in the early years of the Wars of the Roses.\
@@ -32,20 +35,20 @@ The First Battle of Dernancourt (nominated by Peacemaker67) was fought on 28 Mar
 The Socialist Soviet Republic of Abkhazia (nominated by Kaiser matias) was a short-lived republic within the Caucasus region of the Soviet Union that covered the territory of Abkhazia, and existed from 31 March 1921 to 19 February 1931. Formed in the aftermath of the Red Army invasion of Georgia in 1921, it was independent until 16 December 1921, when it agreed to a treaty uniting it with the Georgian Soviet Socialist Republic (Georgian SSR). The SSR Abkhazia was largely similar to an autonomous Soviet republic, though it retained de facto independence from Georgia, being given certain features only full union republics had, like its own military units. Through its status as a \"treaty republic\" with Georgia, Abkhazia joined the Transcaucasian Soviet Federative Socialist Republic, which united Armenian, Azerbaijani, and Georgian SSRs into one federal unit, when the latter was formed in 1922. The SSR Abkhazia was abolished in 1931 and replaced with the Abkhaz Autonomous Soviet Socialist Republic within the Georgian SSR.";
 
 int sig = 23333333;
+int sig2 = 1531534;
 int main()
 {
     printf(1, "================================\n");
     printf(1, "Memory sharing test started.\n");
-    int r;
-    if ((r = createshm(sig, 16000)) >= 0)
-        printf(1, "[P] Share memory created.\n%d\n", r);
+    if (createshm(sig, 16000) >= 0 && createshm(sig2, 40) >= 0)
+        printf(1, "[P] Share memory created.\n");
     else
     {
         printf(1, "[P] Share memory creating failed.\n");
         exit();
     }
     printf(1, "[P] Writing message to child...\n");
-    if (writeshm(sig, content, 15476, 1) == -1)
+    if (writeshm(sig, content, 15476, 0) == -1 || writeshm(sig2, hello, 7, 0) == -1 || writeshm(sig2, child, 9, 7) == -1)
     {
         printf(1, "Error!\n");
         exit();
@@ -54,23 +57,59 @@ int main()
     printf(1, "[P] Forking child...\n");
     if (fork() == 0) // This is child.
     {
+        printf(1, "[C] Receiving message from parent...\n");
         char *read = malloc(16000);
+        char *read2 = malloc(16);
         createshm(sig, 0);
-        if (readshm(sig, read, 15475, 1) == -1)
+        createshm(sig2, 0);
+        if (readshm(sig, read, 15475, 10) == -1 || readshm(sig2, read2, 16, 0))
         {
             printf(1, "Error!\n");
             free(read);
+            free(read2);
             exit();
         }
-        read[10] = '\0';
-        printf(1, "[C] First 10 characters: \n");
-        printf(1, read);
+        read[30] = '\0';
+        printf(1, "[C] First 15 characters received by child in sig %d: \n", sig);
+        printf(1, "[C] %s", read);
+        printf(1, "\n");
+        printf(1, "[C] Full string received by child from parent in sig %d: \n", sig2);
+        printf(1, "[C] %s", read2);
+        printf(1, "\n");
+        printf(1, "[C] Writing message to parent...\n");
+        char *helloparent = "hello my parent!";
+        writeshm(sig2, helloparent, 17, 2);
+        char *inter = (char *)&number;
+        writeshm(sig2, inter, 4, 20);
+
+        free(read);
+        free(read2);
         exit();
     }
     else // This is parent.
+    {
         wait();
+        int *urec = 0;
+        char *tmp = malloc(5);
+        char *rec = malloc(17);
+        if (readshm(sig2, rec, 17, 2) == -1 || readshm(sig2, tmp, 4, 20) == -1)
+        {
+            printf(1, "Error!\n");
+            free(rec);
+            free(tmp);
+            exit();
+        }
+        printf(1, "[P] Full string received by parent from child in sig %d: \n", sig2);
+        printf(1, "[P] %s", rec);
+        printf(1, "\n");
+        printf(1, "[P] Integer received by parent from child in sig %d: \n", sig2);
+        urec = (int *)tmp;
+        printf(1, "[P] %d\n", *urec);
+        free(rec);
+        free(tmp);
+    }
 
-    if (deleteshm(sig) >= 0)
+    if (deleteshm(sig) >= 0 && deleteshm(sig2) >= 0)
         printf(1, "[P] Share memory removed.\n");
     else
     {

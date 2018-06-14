@@ -1191,6 +1191,5 @@ int readshm(uint sig, char *rstr, uint num, uint offset)
       offs = 0;
     }
   }
-  rstr[num] = '\0';
   return 0;
 }
