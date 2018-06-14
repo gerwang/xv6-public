@@ -103,7 +103,8 @@ struct proc {
   void *chan;                  // If non-zero, sleeping on chan
   int killed;                  // If non-zero, have been killed
   struct file *ofile[NOFILE];  // Open files
-  struct inode *cwd;           // Current directory
+  struct inode *cwd;
+  char cwdname[100];           // Current directory
   char name[16];               // Process name (debugging)
 
   // Now the stack is growing from top to bottom,

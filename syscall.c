@@ -125,6 +125,14 @@ extern int sys_readshm(void);
 extern int sys_createshm(void);
 extern int sys_deleteshm(void);
 
+extern int sys_setconsole(void);
+extern int sys_clearc(void);
+extern int sys_insertc(void);
+extern int sys_shutdown(void);
+extern int sys_lseek(void);
+extern int sys_gettimestamp(void);
+extern int sys_getcwd(void);
+
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
@@ -152,6 +160,13 @@ static int (*syscalls[])(void) = {
 [SYS_deleteshm] sys_deleteshm,
 [SYS_readshm] sys_readshm,
 [SYS_writeshm] sys_writeshm
+[SYS_setconsole]  sys_setconsole,
+[SYS_clearc]        sys_clearc,
+[SYS_insertc]       sys_insertc,
+[SYS_shutdown]    sys_shutdown,
+[SYS_lseek]   sys_lseek,
+[SYS_gettimestamp]   sys_gettimestamp,
+[SYS_getcwd]    sys_getcwd
 };
 
 void
