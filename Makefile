@@ -183,6 +183,7 @@ UPROGS=\
 	_npptest\
 	_sagtest\
 	_pgswptest\
+	_shmtest\
 	_find\
 	_bi\
 	_vim\
@@ -269,11 +270,9 @@ EXTRA=\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
 # <<<<<<< memorymanager
 	printf.c umalloc.c cowtest.c lalloctest.c npptest.c sagtest.c\
-	pgswptest.c\
-# =======
+	pgswptest.c shmtest.c\
 	printf.c umalloc.c mv.c touch.c cp.c head.c tail.c splice.c\
 	history.c shutdown.c\
-# >>>>>>> final_shell
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

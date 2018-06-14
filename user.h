@@ -24,6 +24,10 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int nfpgs(void);
+int createshm(uint, uint);
+int deleteshm(uint);
+int readshm(uint, char*, uint, uint);
+int writeshm(uint, char*, uint, uint);
 
 int setconsole(int, int, int, int, int);
 void clearc(void);

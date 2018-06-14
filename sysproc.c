@@ -97,13 +97,65 @@ sys_uptime(void)
   return xticks;
 }
 
-// <<<<<<< memorymanager
-
 int sys_nfpgs(void)
 {
   return get_num_free_pages();
 }
-// =======
+
+// return 1 when succeed, return 0 when fail
+int 
+sys_createshm(void)
+{
+  int sig, bytes;
+  if(argint(0, &sig) < 0 || argint(1, &bytes) < 0)
+  {
+    return 0;
+  }
+  return createshm(sig,bytes);
+}
+
+// return 1 when succeed, return 0 when fail.
+int
+sys_deleteshm(void)
+{
+  int sig;
+  if(argint(0, &sig) < 0)
+  {
+    return 0;
+  }
+  return deleteshm(sig);
+}
+
+//return the number of characters actually written in
+int
+sys_writeshm(void)
+{
+  int sig;
+  char* str;
+  int num;
+  int offset;
+  if(argint(0, &sig) < 0 || argstr(1, &str) < 0 || argint(2, &num) < 0 || argint(3, &offset) < 0)
+  {
+    return 0;
+  }
+  return writeshm(sig, str, num, offset);
+}
+
+// return the number of characters actually read from shmpages
+int 
+sys_readshm(void)
+{
+  int sig;
+  char* str;
+  int num;
+  int offset;
+  if(argint(0, &sig) < 0 || argstr(1, &str) < 0 || argint(2, &num) < 0 || argint(3 ,&offset) < 0)
+  {
+    return 0;
+  }
+  return readshm(sig, str, num, offset);
+}
+
 // Halt (shutdown) the system by sending a special signal to QEMU.
 // Based on: https://github.com/noah-mcaulay/XV6-Operating-System/blob/master/sysproc.c
 int
@@ -141,4 +193,3 @@ sys_gettimestamp(void)
   return ret;
 }
 
-// >>>>>>> final_shell

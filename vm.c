@@ -8,11 +8,27 @@
 #include "elf.h"
 #include "traps.h"
 #include "debugsw.h"
+#include "spinlock.h"
 
 #define SWAP_BUF_SIZE (PGSIZE / 4)    // Buffer size when swap.
 
+struct shmindex
+{
+  char* addrs[1024];
+};
+
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
+struct shmnode
+{
+  uint sig;//signature
+  struct shmindex *addr; //page table physical address
+  uint pagenum;//total page numbers in this shared area
+  uint count;//how many references from processes are pointed to this sig
+}shmlist[256];
+
+
+struct spinlock kshmlock;
 
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
@@ -887,4 +903,293 @@ void swappage(uint addr)
 
   // Refresh page dir.
   lcr3(V2P(curproc->pgdir));
+}
+
+// init shared memory
+void initshm(void)
+{
+  for (int i = 0; i < 1024; i++)
+  {
+    shmlist[i].sig = 0;
+    shmlist[i].count = 0;
+    shmlist[i].pagenum = 0;
+    shmlist[i].addr = 0;
+  }
+  cprintf("initshm complete\n");
+}
+
+// increase some sig counts in shmlist
+// add permission to now process
+// if sig does not exist, then create shared physical pages that can cover data of size "bytes".
+// return 1 when succeed create, return 0 when sig already exists, return -1 when fail.
+int createshm(uint sig, uint bytes)
+{
+  if (sig == 0)
+  {
+    cprintf("cannot use sig 0 for shared memory, createshm failed!\n");
+    return -1;
+  }
+  if (bytes > 1024 * PGSIZE)
+  {
+    cprintf("%d bytes is too big, cannot get that big shared area, createshm failed!\n");
+    return -1;
+  }
+  acquire(&kshmlock);
+  int firstzero = -1; //first position to insert a new sig
+  int i;
+  for (i = 0; i < 256; i++)
+  {
+    if (firstzero < 0 && shmlist[i].sig == 0)
+    {
+      firstzero = i;
+    }
+    if (shmlist[i].sig == sig)
+    {
+      break;
+    }
+  }
+  struct proc *pr = myproc();
+  int j;
+  for (j = 0; j < MAX_SIG_PER_PROC; j++)
+  {
+    if (pr->sig_permit[j] == sig)
+    {
+      cprintf("this process already had the permission to shared area %d, cannot get permission again, createshm failed!\n", sig);
+      release(&kshmlock);
+      return -1;
+    }
+  }
+  for (j = 0; j < MAX_SIG_PER_PROC; j++)
+  {
+    if (pr->sig_permit[j] == 0)
+    {
+      break;
+    }
+  }
+  if (j == MAX_SIG_PER_PROC) //overflow, already have 5 sigs in this proc
+  {
+    cprintf("this process already have 5 sigs in this process, cannot add more shared memory area to access, createshm failed\n");
+    release(&kshmlock);
+    return -1;
+  }
+  pr->sig_permit[j] = sig;
+  if (i != 256) //this sig already exists
+  {
+    shmlist[i].count++;
+    if (bytes > shmlist[i].pagenum * PGSIZE) //shared area "sig" need extend
+    {
+      int target = PGROUNDUP(bytes) / PGSIZE;
+      for (int j = shmlist[i].pagenum; j < target; j++)
+      {
+        if ((shmlist[i].addr->addrs[j] = kalloc()) == 0)
+        {
+          cprintf("kalloc failed\n");
+          for (int j0 = shmlist[i].pagenum; j0 < j; j0++)
+            kfree(shmlist[i].addr->addrs[j0]);
+          release(&kshmlock);
+          return -1;
+        }
+      }
+    }
+    release(&kshmlock);
+    return 0;
+  }
+  else //create a new sig in pos
+  {
+    int pos = firstzero == -1 ? i : firstzero;
+    shmlist[pos].sig = sig;
+    shmlist[pos].count = 1;
+    shmlist[pos].pagenum = PGROUNDUP(bytes) / PGSIZE;
+    if ((shmlist[pos].addr = (struct shmindex *)kalloc()) == 0)
+    {
+      cprintf("kalloc failed\n");
+      release(&kshmlock);
+      return -1;
+    }
+    int i0;
+    for (i0 = 0; i0 < shmlist[pos].pagenum; i0++)
+    {
+      if ((shmlist[pos].addr->addrs[i0] = kalloc()) == 0)
+      {
+        cprintf("kalloc failed\n");
+        for (j = 0; j < i0; j++)
+          kfree(shmlist[pos].addr->addrs[j]);
+        release(&kshmlock);
+        return -1;
+      }
+    }
+    for (i = shmlist[pos].pagenum; i < 1024; i++)
+      shmlist[pos].addr->addrs[i] = (char *)0xffffffff;
+    release(&kshmlock);
+    return 0;
+  }
+}
+
+// decrease some sig counts in shmlist
+// remove permission to now proc
+// if count is zero, then delete shared physical pages pointed by sig.
+// return 1 when succeed, return 0 when delelte a sig, return -1 when fail.
+int deleteshm(uint sig)
+{
+  if (sig == 0)
+  {
+    cprintf("cannot use sig 0 for shared memory, deleteshm failed!\n");
+    return -1;
+  }
+  acquire(&kshmlock);
+  int i;
+  for (i = 0; i < 256; i++)
+  {
+    if (shmlist[i].sig == sig)
+    {
+      break;
+    }
+  }
+  if (i == 256) //shared memory pages do not exist
+  {
+    cprintf("sig does not existed, deleteshm failed!\n");
+    release(&kshmlock);
+    return -1;
+  }
+  struct proc *pr = myproc();
+  int j;
+  for (j = 0; j < MAX_SIG_PER_PROC; j++)
+  {
+    if (pr->sig_permit[j] == sig)
+    {
+      pr->sig_permit[j] = 0;
+      break;
+    }
+  }
+  if (j == MAX_SIG_PER_PROC) //not found
+  {
+    cprintf("this process does not have permission to access sig, deleteshm failed!\n");
+    release(&kshmlock);
+    return -1;
+  }
+  shmlist[i].count--;
+  if (shmlist[i].count == 0) //delete sig node,free addr
+  {
+    int k;
+    for (k = 0; k < shmlist[i].pagenum; k++)
+    {
+      kfree(shmlist[i].addr->addrs[k]);
+    }
+    kfree((char *)shmlist[i].addr);
+  }
+  release(&kshmlock);
+  return 1;
+}
+
+// write data from wstr to shared pages with offset "offset"
+// data length is num
+// return the number of characters actually written to shmpages
+// return -1 if failed
+int writeshm(uint sig, char *wstr, uint num, uint offset)
+{
+  if (sig == 0)
+  {
+    cprintf("cannot use sig 0 for shared memory, writeshm failed!\n");
+    return -1;
+  }
+  int i;
+  for (i = 0; i < 256; i++)
+  {
+    if (shmlist[i].sig == sig)
+      break;
+  }
+  if (i == 256) //does not exist
+  {
+    cprintf("shared area %d has not been created, writeshm failed!\n", sig);
+    return -1;
+  }
+  struct proc *pr = myproc();
+  int j;
+  for (j = 0; j < MAX_SIG_PER_PROC; j++)
+  {
+    if (pr->sig_permit[j] == sig)
+    {
+      break;
+    }
+  }
+  if (j == MAX_SIG_PER_PROC) //not found
+  {
+    cprintf("this process does not have permission to access shared area %d, writeshm failed!\n", sig);
+    return -1;
+  }
+
+  if (num > PGSIZE * shmlist[i].pagenum - offset) //overflow
+  {
+    cprintf("write area overflow, not enough space to write in %d bytes, writeshm failed!\n", num);
+    return -1;
+  }
+
+  int pageindex = offset / PGSIZE; //start page
+  int offs = offset % PGSIZE; //offset in one page
+  for (int j = num; j > 0; j--)
+  {
+    shmlist[i].addr->addrs[pageindex][offs++] = wstr[num - j];
+    if (offs == PGSIZE) //change page
+    {
+      pageindex++;
+      offs = 0;
+    }
+  }
+  return 0;
+}
+
+// read data to rstr from shared pages with offset "offset"
+// return the number of characters actually read from shmpages
+// return -1 if failed
+int readshm(uint sig, char *rstr, uint num, uint offset)
+{
+  if (sig == 0)
+  {
+    cprintf("cannot use sig 0 for shared memory, readshm failed!\n");
+    return -1;
+  }
+  int i;
+  for (i = 0; i < 256; i++)
+  {
+    if (shmlist[i].sig == sig)
+      break;
+  }
+  if (i == 256) //does not exist
+  {
+    cprintf("shared area %d has not been created, readshm failed!\n", sig);
+    return -1;
+  }
+
+  struct proc *pr = myproc();
+  int j;
+  for (j = 0; j < MAX_SIG_PER_PROC; j++)
+  {
+    if (pr->sig_permit[j] == sig)
+    {
+      break;
+    }
+  }
+  if (j == MAX_SIG_PER_PROC) //not found
+  {
+    cprintf("this process does not have permission to access shared area %d, readshm failed!\n", sig);
+    return -1;
+  }
+
+  if (num > PGSIZE * shmlist[i].pagenum - offset) //overflow, read all saved data 
+  {
+    num = PGSIZE * shmlist[i].pagenum - offset;
+  }
+
+  int pageindex = offset / PGSIZE; //start page
+  int offs = offset % PGSIZE;      //offset in one page
+  for (int j = num; j > 0; j--)
+  {
+    rstr[num - j] = shmlist[i].addr->addrs[pageindex][offs++];
+    if (offs == PGSIZE) //change page
+    {
+      pageindex++;
+      offs = 0;
+    }
+  }
+  return 0;
 }
