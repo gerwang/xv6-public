@@ -309,29 +309,6 @@ cgaputc(int c)
     if(pos > 0) --pos;
   } else
     crt[pos++] = (c&0xff) | 0x0700;  // black on white
-  
-  /*
-  if((pos/80) >= 24){  // Scroll up.
-    memmove(crt, crt+80, sizeof(crt[0])*23*80);
-    pos -= 80;
-    memset(crt+pos, 0, sizeof(crt[0])*(24*80 - pos));
-  }
-  */
-  //children scroll up
-  /*
-  if((pos/80) >= mainRows && (pos/80) <= (m2Rows-1)){  // Scroll up.
-    recordScreenHistory();
-    startScreenLine++;
-    screenHistoryLen++;
-    
-    memmove(crt, crt+80, sizeof(crt[0])*(mainRows-1)*80);
-    pos -= 80;
-    int i;
-    for(i=0;i<80;i++)
-      crt[80*(mainRows-1)+i] = (' '&0xff) | 0x8000;
-    //memset(crt+pos, 0, sizeof(crt[0])*(mainRows*80 - pos));
-  }
-  */
 
   if((pos/80) >= 24){  // Scroll up.
     recordScreenHistory();
@@ -654,6 +631,13 @@ consoleintr(int (*getc)(void))
       cgaputc('6');
       cgaputc(':');
       break;
+    /*case C('J'):
+      input.buf[input.e++ % INPUT_BUF] = c;
+      consputc(c);
+      input.w = input.e;
+      cgaputc('\n');
+      wakeup(&input.r);
+      break;*/
     case C('B'): case C('D'):  case C('F'):
     case C('G'): 
     case C('O'): case C('Q'):

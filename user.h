@@ -29,6 +29,8 @@ void clearc(void);
 void insertc(int c);
 int shutdown(void);
 int lseek(int, int, int);
+int hide(char*);
+int show(char*);
 
 // ulib.c
 int stat(char*, struct stat*);

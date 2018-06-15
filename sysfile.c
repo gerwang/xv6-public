@@ -370,6 +370,7 @@ sys_open(void)
   }
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
+  f->showable = (omode & O_SHOW);
   return fd;
 }
 
@@ -527,5 +528,153 @@ int sys_lseek(void) {
 
 	f->off = newoff;
 	return newoff;
+}
+
+
+int
+sys_hide(void)
+{
+  struct inode *ip, *dp;
+  struct dirent de;
+  char name[DIRSIZ], *path;
+  uint off;
+
+  if(argstr(0, &path) < 0)
+    return -1;
+
+  begin_op();
+  if((dp = nameiparent(path, name)) == 0){
+    end_op();
+    return -1;
+  }
+
+  ilock(dp);
+
+  // Cannot unlink "." or "..".
+  if(namecmp(name, ".") == 0 || namecmp(name, "..") == 0)
+    goto bad;
+
+  if((ip = dirlookup(dp, name, &off)) == 0)
+    goto bad;
+  ilock(ip);
+
+  if(ip->nlink < 1)
+    panic("unlink: nlink < 1");
+  if(ip->type == T_DIR && !isdirempty(ip)){
+    iunlockput(ip);
+    goto bad;
+  }
+
+
+
+
+  if(ip->type == T_DIR){
+    if(dp->showable != O_HIDE){  //if it is not hided
+      dp->showable = O_HIDE;  //hide it
+      cprintf(name);
+      cprintf(" delete completed(hide)\n");
+    }
+    else{  //it has already hided
+      memset(&de, 0, sizeof(de));
+      if(writei(dp, (char*)&de, off, sizeof(de)) != sizeof(de))
+        panic("unlink: writei");
+      dp->nlink--;  //hide change to unlink
+      cprintf(name);
+      cprintf(" delete completed(unlink)\n");
+    }
+    iupdate(dp);
+  }
+  iunlockput(dp);
+  if(ip->showable != O_HIDE){  //if it is not hided
+    ip->showable = O_HIDE;  //hide it
+    cprintf(name);
+      cprintf(" delete completed(hide)\n");
+  }
+  else{  //it has already hided
+    memset(&de, 0, sizeof(de));
+    if(writei(dp, (char*)&de, off, sizeof(de)) != sizeof(de))
+      panic("unlink: writei");
+    ip->nlink--;  //hide change to unlink
+    cprintf(name);
+    cprintf(" delete completed(unlink)\n");
+  }
+
+  iupdate(ip);
+  iunlockput(ip);
+  end_op();
+
+  return 0;
+
+bad:
+  iunlockput(dp);
+  end_op();
+  return -1;
+}
+
+// Create the path new as a link to the same inode as old.
+int
+sys_show(void)
+{
+  struct inode *ip, *dp;
+  struct dirent de;
+  char name[DIRSIZ], *path;
+  uint off;
+
+  if(argstr(0, &path) < 0)
+    return -1;
+
+  begin_op();
+  if((dp = nameiparent(path, name)) == 0){
+    end_op();
+    return -1;
+  }
+
+  ilock(dp);
+
+  // Cannot hide "." or "..".
+  if(namecmp(name, ".") == 0 || namecmp(name, "..") == 0)
+    goto bad;
+
+  if((ip = dirlookup(dp, name, &off)) == 0)
+{
+    goto bad;
+}
+
+ ilock(ip);
+
+  if(ip->nlink < 1)
+    panic("hide: nlink < 1");
+  if(ip->type == T_DIR && !isdirempty(ip)){
+    iunlockput(ip);
+    goto bad;
+  }
+
+  memset(&de, 0, sizeof(de));
+
+  if(ip->type == T_DIR){
+    if(dp->showable != O_SHOW){  //if it is not showed
+      dp->showable = O_SHOW;  //show it
+      cprintf(name);
+      cprintf(" refresh completed\n");
+    }
+    iupdate(dp);
+  }
+  iunlockput(dp);
+  if(ip->showable != O_SHOW){  //if it is not showed
+    ip->showable = O_SHOW;  //show it
+    cprintf(name);
+    cprintf(" refresh completed\n");
+  }
+
+  iupdate(ip);
+  iunlockput(ip);
+  end_op();
+
+  return 0;
+
+bad:
+  iunlockput(dp);
+  end_op();
+  return -1;
 }
 
