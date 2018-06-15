@@ -163,7 +163,7 @@ static int (*syscalls[])(void) = {
 [SYS_createshm] sys_createshm,
 [SYS_deleteshm] sys_deleteshm,
 [SYS_readshm] sys_readshm,
-[SYS_writeshm] sys_writeshm
+[SYS_writeshm] sys_writeshm,
 [SYS_setconsole]  sys_setconsole,
 [SYS_clearc]        sys_clearc,
 [SYS_insertc]       sys_insertc,
