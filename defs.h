@@ -24,6 +24,9 @@ void            consoleinit(void);
 void            cprintf(char*, ...);
 void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
+int             inittaskmgr(void);
+int             closetaskmgr(void);
+int             updscrcont(char*, int);
 void            clearc(void);
 void            insertc(int);
 
@@ -136,6 +139,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             getprocinfo(int*, char(*)[16], int*, uint*);
 void            swaptableinit(void);
 int             swapstab_growpage(struct proc *pr);
 void            memstab_clear(struct proc*);

@@ -32,3 +32,8 @@
 #define SYS_lseek  	27
 #define SYS_gettimestamp 28
 #define SYS_getcwd  29
+
+#define SYS_inittaskmgr  41
+#define SYS_closetaskmgr 42
+#define SYS_getprocinfo  43
+#define SYS_updscrcont   44

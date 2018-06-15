@@ -178,6 +178,7 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
+	_taskmgr\
 	_cowtest\
 	_lalloctest\
 	_npptest\

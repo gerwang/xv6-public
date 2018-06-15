@@ -132,6 +132,10 @@ extern int sys_shutdown(void);
 extern int sys_lseek(void);
 extern int sys_gettimestamp(void);
 extern int sys_getcwd(void);
+extern int sys_inittaskmgr(void);
+extern int sys_closetaskmgr(void);
+extern int sys_getprocinfo(void);
+extern int sys_updscrcont(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -166,7 +170,11 @@ static int (*syscalls[])(void) = {
 [SYS_shutdown]    sys_shutdown,
 [SYS_lseek]   sys_lseek,
 [SYS_gettimestamp]   sys_gettimestamp,
-[SYS_getcwd]    sys_getcwd
+[SYS_getcwd]    sys_getcwd,
+[SYS_inittaskmgr]   sys_inittaskmgr,
+[SYS_closetaskmgr]  sys_closetaskmgr,
+[SYS_getprocinfo]   sys_getprocinfo,
+[SYS_updscrcont]    sys_updscrcont,
 };
 
 void
