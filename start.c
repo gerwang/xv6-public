@@ -1,5 +1,5 @@
 #include <time.h>
-#include <xv6/user.h>
+#include "user.h"
 
 int main(int argc, char *argv[]);
 
