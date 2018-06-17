@@ -86,7 +86,7 @@ CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 &
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
 LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
-LDUSER += --omagic --entry=main --section-start=.text=0x1000
+LDUSER += --omagic --entry=_start --section-start=.text=0x1000
 
 xv6.img: bootblock kernel fs.img
 	dd if=/dev/zero of=xv6.img count=10000
@@ -149,7 +149,7 @@ $(LIBC):
 	$(MAKE) -C ./libc all
 
 _%: %.o $(ULIB) $(START) $(LIBC)
-	$(LD) $(LDFLAGS) -s -N -e _start -Ttext 0 -o $@ $^
+	$(LD) $(LDFLAGS) $(LDUSER) -s -N -o $@ $^
 	$(OBJDUMP) -S $@ > $*.asm
 	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $*.sym
 
