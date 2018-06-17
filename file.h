@@ -6,6 +6,7 @@ struct file {
   struct pipe *pipe;
   struct inode *ip;
   uint off;
+  char showable;
 };
 
 
@@ -22,6 +23,7 @@ struct inode {
   short major;
   short minor;
   short nlink;
+  char showable;
   uint size;
   uint addrs[NDIRECT+1];
 };

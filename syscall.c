@@ -136,6 +136,8 @@ extern int sys_inittaskmgr(void);
 extern int sys_closetaskmgr(void);
 extern int sys_getprocinfo(void);
 extern int sys_updscrcont(void);
+extern int sys_hide(void);
+extern int sys_show(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -175,6 +177,8 @@ static int (*syscalls[])(void) = {
 [SYS_closetaskmgr]  sys_closetaskmgr,
 [SYS_getprocinfo]   sys_getprocinfo,
 [SYS_updscrcont]    sys_updscrcont,
+[SYS_hide]    sys_hide,
+[SYS_show]    sys_show,
 };
 
 void

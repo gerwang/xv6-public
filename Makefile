@@ -200,6 +200,10 @@ UPROGS=\
 	_more\
 	_date\
 	_pwd\
+	_delete\
+	_refresh\
+	_showdeled\
+
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -272,7 +276,7 @@ EXTRA=\
 	printf.c umalloc.c cowtest.c lalloctest.c npptest.c sagtest.c\
 	pgswptest.c shmtest.c\
 	printf.c umalloc.c mv.c touch.c cp.c head.c tail.c splice.c\
-	history.c shutdown.c\
+	history.c shutdown.c delete.c refresh.c showdeled.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 
@@ -314,3 +318,4 @@ run:
 debug:
 	make clean
 	make qemu-nox-gdb
+

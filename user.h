@@ -40,6 +40,8 @@ int shutdown(void);
 int lseek(int, int, int);
 int gettimestamp(void);
 int getcwd(char *);
+int hide(char*);
+int show(char*);
 
 // ulib.c
 int stat(char*, struct stat*);
