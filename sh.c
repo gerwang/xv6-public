@@ -7,6 +7,7 @@
 #include "console.h"
 #include "stat.h"
 #include "fs.h"
+#include <stdio.h>
 
 // Parsed command representation
 #define EXEC  1

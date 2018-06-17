@@ -21,12 +21,13 @@
 
 #include "history.h"
 #include "var_in_kernel.h"
+#include "syscall.h"
 
 #define CRTPORT 0x3d4
 static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory
 
 //Edit console output
-int 
+int
 sys_setconsole(void)
 {
     int pos, ch, color, cursor, mode;
@@ -52,7 +53,6 @@ sys_setconsole(void)
     consolemode = mode;
     return 0;
 }
-
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -379,7 +379,7 @@ sys_open(void)
   f->type = FD_INODE;
   f->ip = ip;
   if(omode & O_ADD){
-    f->off = ip->size;  
+    f->off = ip->size;
   }else{
     f->off = 0;
   }
@@ -508,7 +508,7 @@ sys_chdir(void)
   char *path;
   struct inode *ip;
   struct proc *curproc = myproc();
-  
+
   begin_op();
   if(argstr(0, &path) < 0 || (ip = namei(path)) == 0){
     end_op();
@@ -576,51 +576,6 @@ sys_pipe(void)
   fd[0] = fd0;
   fd[1] = fd1;
   return 0;
-}
-
-//操作文件读取位置
-int sys_lseek(void) {
-	int fd;
-	int offset;
-	int base;
-	int newoff = 0;
-	int zerosize, i;
-	char *zeroed, *z;
-
-	struct file *f;
-
-	if ((argfd(0, &fd, &f)<0) ||
-		(argint(1, &offset)<0) || (argint(2, &base)<0))
-			return 0;
-
-	if( base == SEEK_SET) {
-		newoff = offset;
-	}
-
-	if (base == SEEK_CUR)
-		newoff = f->off + offset;
-
-	if (base == SEEK_END)
-		newoff = f->ip->size + offset;
-
-	if (newoff < 0)
-		return 0;
-
-	if (newoff > f->ip->size){
-		zerosize = newoff - f->ip->size;
-		zeroed = kalloc();
-		z = zeroed;
-		for (i = 0; i < PGSIZE; i++)
-			*z++ = 0;
-		while (zerosize > 0){
-			filewrite(f, zeroed, zerosize);
-			zerosize -= PGSIZE;
-		}
-		kfree(zeroed);
-	}
-
-	f->off = newoff;
-	return newoff;
 }
 
 int
@@ -781,3 +736,61 @@ bad:
   return -1;
 }
 
+
+int sys_isatty(void) {
+  int fd,res=0;
+  struct file* f;
+  if(argfd(0, &fd, &f) < 0) {
+    return 0;
+  }
+  if(f->type == FD_INODE) {
+      ilock(f->ip);
+      res = f->ip->type == T_DEV;//must be console
+      iunlock(f->ip);
+  }
+  return res;
+}
+
+// lseek code derived from https://github.com/ctdk/xv6
+int sys_lseek(void)
+{
+  int fd;
+  int offset;
+  int base;
+  int newoff=-1;
+  int zerosize, i;
+  char *zeroed, *z;
+
+  struct file *f;
+
+  if ((argfd(0, &fd, &f)<0) ||
+      (argint(1, &offset)<0) || (argint(2, &base)<0))
+    return(EINVAL);
+
+  if( base == SEEK_SET) {
+    newoff = offset;
+  } else if (base == SEEK_CUR) {
+    newoff = f->off + offset;
+  } else if (base == SEEK_END) {
+    newoff = f->ip->size + offset;
+  }
+
+  if (newoff < 0)
+    return EINVAL;
+
+  if (newoff > f->ip->size){
+    zerosize = newoff - f->ip->size;
+    zeroed = kalloc();
+    z = zeroed;
+    for (i = 0; i < PGSIZE; i++)
+      *z++ = 0;
+    while (zerosize > 0){
+      filewrite(f, zeroed, zerosize);
+      zerosize -= PGSIZE;
+    }
+    kfree(zeroed);
+  }
+
+  f->off = (uint) newoff;
+  return newoff;
+}
