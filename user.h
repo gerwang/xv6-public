@@ -53,6 +53,7 @@ int stat(char*, struct stat*);
 void printf(int, char*, ...);
 char* gets(char*, int max);
 int atoi(const char*);
+char getc_from_stdin(void);
 
 #include <stdlib.h>
 #include <string.h>

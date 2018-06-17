@@ -7,7 +7,6 @@
 #include "console.h"
 #include "stat.h"
 #include "fs.h"
-#include <stdio.h>
 
 // Parsed command representation
 #define EXEC  1
@@ -164,7 +163,7 @@ getcmd(char *buf, int nbuf)//从键盘读入命令到buf中，最长不能超过
   memset(buf, 0, nbuf);
   char c;
   for(i=0; i+1 < nbuf; ){ 
-    c = getc();
+    c = getc_from_stdin();
     if( ( i==0 || buf[i-1] == 0 ) && c == 0 )//若输入的为首字符或者此前已经输入了空格
       continue;//则可以忽略多余的空格（适用性最好的实现方式应该时对输入的buf进行分词，此处简化处理，只过滤多余的空格）
     if(c+256 == 0xE2){//key_up

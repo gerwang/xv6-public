@@ -153,14 +153,8 @@ _%: %.o $(ULIB) $(START) $(LIBC)
 	$(OBJDUMP) -S $@ > $*.asm
 	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $*.sym
 
-#_forktest: forktest.o $(ULIB)
-#	# forktest has less library code linked in - needs to be small.
-#	# in order to be able to max out the proc table.
-#	$(LD) $(LDFLAGS) -N -e main -Ttext 0 -o _forktest forktest.o $(ULIB)
-#	$(OBJDUMP) -S _forktest > forktest.asm
-
 mkfs: mkfs.c fs.h
-	gcc -Wall -o mkfs mkfs.c
+	gcc -Werror -Wall -o mkfs mkfs.c
 
 # Prevent deletion of intermediate files, e.g. cat.o, after first build, so
 # that disk image changes after first build are persistent until clean.  More
