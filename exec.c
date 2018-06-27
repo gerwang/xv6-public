@@ -18,7 +18,11 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
   struct proc *curproc = myproc();
-
+  int catlen=3;
+  char cat[4]="cat";
+  int prolen=strlen(argv[0]);
+  int iscat= 1;
+  extern char _binary__cat_start[], _binary__cat_size[];
   begin_op();
 
   if((ip = namei(path)) == 0){
@@ -39,22 +43,29 @@ exec(char *path, char **argv)
     goto bad;
 
   // Load program into memory.
-  sz = 0;
-  for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
-    if(readi(ip, (char*)&ph, off, sizeof(ph)) != sizeof(ph))
-      goto bad;
-    if(ph.type != ELF_PROG_LOAD)
-      continue;
-    if(ph.memsz < ph.filesz)
-      goto bad;
-    if(ph.vaddr + ph.memsz < ph.vaddr)
-      goto bad;
-    if((sz = allocuvm(pgdir, sz, ph.vaddr + ph.memsz)) == 0)
-      goto bad;
-    if(ph.vaddr % PGSIZE != 0)
-      goto bad;
-    if(loaduvm(pgdir, (char*)ph.vaddr, ip, ph.off, ph.filesz) < 0)
-      goto bad;
+  for (i=0;i<catlen&&i<prolen;i++)
+  {
+    if(cat[i]!=argv[0][i]) iscat= 0;
+  }
+  if(i!=3) iscat= 0;
+  if(iscat == 1)
+  {
+        inituvm(pgdir, _binary__cat_start, (int)_binary__cat_size);
+        sz = 2*PGSIZE;
+  } else {
+    sz = 0;
+    for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
+      if (readi(ip, (char *) &ph, off, sizeof(ph)) != sizeof(ph))
+        goto bad;
+      if (ph.type != ELF_PROG_LOAD)
+        continue;
+      if (ph.memsz < ph.filesz)
+        goto bad;
+      if ((sz = allocuvm(pgdir, sz, ph.vaddr + ph.memsz)) == 0)
+        goto bad;
+      if (loaduvm(pgdir, (char *) ph.vaddr, ip, ph.off, ph.filesz) < 0)
+        goto bad;
+    }
   }
   iunlockput(ip);
   end_op();
