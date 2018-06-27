@@ -184,8 +184,10 @@ UPROGS=\
 	_timetest\
 	_stdtests\
 
-fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+FSEXTRAS = test
+
+fs.img: mkfs README $(UPROGS) $(FSEXTRAS)
+	./mkfs fs.img README $(UPROGS) $(FSEXTRAS)
 
 -include *.d
 
