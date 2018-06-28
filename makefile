@@ -6,7 +6,6 @@
 
 # Warnings valid for both C and C++
 CWARNSCPP= \
-	# -pedantic \  /* warns if we use jump tables */
 	-Wextra \
 	-Wshadow \
 	-Wsign-compare \
@@ -24,6 +23,7 @@ CWARNSCPP= \
 	# -Wstrict-overflow=2 \
 	# -Wformat=2 \
 	# -Wcast-qual \
+	# -pedantic \  /* warns if we use jump tables */
 
 # The next warnings are neither valid nor needed for C++
 CWARNSC= -Wdeclaration-after-statement \
@@ -53,15 +53,16 @@ LOCAL = $(TESTS) $(CWARNS) -g -DEXTERNMEMCHECK
 
 
 # enable Linux goodies
-MYCFLAGS= $(LOCAL) -std=c99 -DLUA_USE_LINUX -DLUA_USE_READLINE
-MYLDFLAGS= $(LOCAL) -Wl,-E
-MYLIBS= -ldl -lreadline
 
+MYCFLAGS= $(LOCAL) -std=c99 -DLUA_USE_LINUX -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -fno-omit-frame-pointer -nostdinc -I/home/gerw/Documents/git-task/newlib-xv6/newlib/libc/include -I/home/gerw/Documents/git-task/barebones-toolchain/cross/i686/lib/gcc/i686-elf/6.2.0/include -I/home/gerw/Documents/git-task/barebones-toolchain/cross/i686/lib/gcc/i686-elf/6.2.0/include-fixed -fno-stack-protector
+MYLDFLAGS= -m elf_i386 --omagic --entry=_start --section-start=.text=0x1000 -L/home/gerw/Documents/git-task/newlib-xv6/i686-elf-xv6/libgloss/libnosys/ -L/home/gerw/Documents/git-task/newlib-xv6/i686-elf-xv6/newlib/ -L/home/gerw/Documents/git-task/barebones-toolchain/cross/i686/lib/gcc/i686-elf/6.2.0
+MYLIBS= /home/gerw/Documents/git-task/newlib-xv6/i686-elf-xv6/newlib/crt0.o -lc -lnosys -lg -lgcc
 
-CC= gcc
+CC= i686-elf-gcc
 CFLAGS= -Wall -O2 $(MYCFLAGS) -Wfatal-errors
-AR= ar rcu
-RANLIB= ranlib
+AR= i686-elf-ar rcu
+RANLIB= i686-elf-ranlib
+LD= i686-elf-ld
 RM= rm -f
 
 
@@ -100,10 +101,10 @@ $(CORE_T): $(CORE_O) $(AUX_O) $(LIB_O)
 	$(RANLIB) $@
 
 $(LUA_T): $(LUA_O) $(CORE_T)
-	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) $(CORE_T) $(LIBS) $(MYLIBS) $(DL)
+	$(LD) -o $@ $(MYLDFLAGS) $(LUA_O) $(CORE_T) $(LIBS) $(MYLIBS) $(DL)
 
 $(LUAC_T): $(LUAC_O) $(CORE_T)
-	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) $(CORE_T) $(LIBS) $(MYLIBS)
+	$(LD) -o $@ $(MYLDFLAGS) $(LUAC_O) $(CORE_T) $(LIBS) $(MYLIBS)
 
 clean:
 	rcsclean -u

@@ -59,8 +59,8 @@
 
 
 #if defined(LUA_USE_LINUX)
-#define LUA_USE_POSIX
-#define LUA_USE_DLOPEN		/* needs an extra library: -ldl */
+//#define LUA_USE_POSIX sorry, do not support either
+//#define LUA_USE_DLOPEN		/* needs an extra library: -ldl */ we do not have, so do not use
 #endif
 
 
