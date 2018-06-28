@@ -207,8 +207,10 @@ UPROGS=\
 	_timetest\
 	_stdtests\
 
-fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+LUA_SCRIPTS=testmath.lua testos.lua testio.lua testtable.lua
+
+fs.img: mkfs README $(UPROGS) $(LUA_SCRIPTS)
+	./mkfs fs.img README $(UPROGS) $(LUA_SCRIPTS)
 
 -include *.d
 
