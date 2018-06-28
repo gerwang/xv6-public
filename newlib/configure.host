@@ -387,6 +387,7 @@ case "${host}" in
 	;;
   *-*-xv6*)
 	sys_dir=xv6
+	default_newlib_io_long_long="yes"
 	newlib_cflags="${newlib_cflags} -D_I386MACH_ALLOW_HW_INTERRUPTS"
 	;;
   a29k-*-*)
