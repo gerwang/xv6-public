@@ -236,6 +236,30 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
   return 0;
 }
 
+
+// Load a program segment into pgdir.  addr must be page-aligned
+// and the pages from addr to addr+sz must already be mapped.
+int
+loaduvm_from_kernel(pde_t *pgdir, char *addr, char *code_start, char *code_end, uint offset, uint sz) {
+  uint i, pa, n;
+  pte_t *pte;
+
+  if ((uint) addr % PGSIZE != 0)
+    panic("loaduvm: addr must be page aligned");
+  for (i = 0; i < sz; i += PGSIZE) {
+    if ((pte = walkpgdir(pgdir, addr + i, 0)) == 0)
+      panic("loaduvm: address should exist");
+    pa = PTE_ADDR(*pte);
+    if (sz - i < PGSIZE)
+      n = sz - i;
+    else
+      n = PGSIZE;
+    if (readm(code_start, P2V(pa), offset + i, n, code_end) != n)
+      return -1;
+  }
+  return 0;
+}
+
 // Find a usable slot and record it using linear search.
 void fifo_record(char *va, struct proc *curproc)
 {
