@@ -7,7 +7,7 @@
 #include "x86.h"
 #include "elf.h"
 
-extern char _binary__cat_start[], _binary__cat_end[];
+extern char _binary_lua_start[], _binary_lua_end[];
 
 void kmemcpy(char *src, char *dest, uint n) {
   while (n != 0) {
@@ -102,11 +102,11 @@ exec(char *path, char **argv)
   pde_t *pgdir, *oldpgdir;
   struct proc *curproc = myproc();
 
-  if (exec_strcmp(path, "mycat") == 0) {
+  if (exec_strcmp(path, "lua") == 0) {
 
     ip = 0;
 
-    if (load_from_kernel(_binary__cat_start, _binary__cat_end, &pgdir, &sz, &ph, &elf) < 0) {
+    if (load_from_kernel(_binary_lua_start, _binary_lua_end, &pgdir, &sz, &ph, &elf) < 0) {
       goto bad;
     }
 
