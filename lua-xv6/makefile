@@ -54,9 +54,13 @@ LOCAL = $(TESTS) $(CWARNS) -g -DEXTERNMEMCHECK
 
 # enable Linux goodies
 
-MYCFLAGS= $(LOCAL) -std=c99 -DLUA_USE_LINUX -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -fno-omit-frame-pointer -nostdinc -I/home/gerw/Documents/git-task/newlib-xv6/newlib/libc/include -I/home/gerw/Documents/git-task/barebones-toolchain/cross/i686/lib/gcc/i686-elf/6.2.0/include -I/home/gerw/Documents/git-task/barebones-toolchain/cross/i686/lib/gcc/i686-elf/6.2.0/include-fixed -fno-stack-protector
-MYLDFLAGS= -m elf_i386 --omagic --entry=_start --section-start=.text=0x1000 -L/home/gerw/Documents/git-task/newlib-xv6/i686-elf-xv6/libgloss/libnosys/ -L/home/gerw/Documents/git-task/newlib-xv6/i686-elf-xv6/newlib/ -L/home/gerw/Documents/git-task/barebones-toolchain/cross/i686/lib/gcc/i686-elf/6.2.0
-MYLIBS= /home/gerw/Documents/git-task/newlib-xv6/i686-elf-xv6/newlib/crt0.o -lc -lnosys -lg -lgcc
+NEWLIBDIR= ../xv6-newlib
+GCCLIBDIR= ../barebones-toolchain-i686-elf/cross/`uname -m`/lib/gcc/i686-elf/6.2.0
+
+MYCFLAGS= $(LOCAL) -std=c99 -DLUA_USE_LINUX -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 \
+        -fno-omit-frame-pointer -nostdinc -I$(NEWLIBDIR)/newlib/libc/include -I$(GCCLIBDIR)/include -I$(GCCLIBDIR)/include-fixed -fno-stack-protector
+MYLDFLAGS= -m elf_i386 --omagic --entry=_start --section-start=.text=0x1000 -L$(NEWLIBDIR)/i686-elf-xv6/libgloss/libnosys/ -L$(NEWLIBDIR)/i686-elf-xv6/newlib/ -L$(GCCLIBDIR)
+MYLIBS= $(NEWLIBDIR)/i686-elf-xv6/newlib/crt0.o -lc -lnosys -lg -lgcc
 
 CC= i686-elf-gcc
 CFLAGS= -Wall -O2 $(MYCFLAGS) -Wfatal-errors
